@@ -34,14 +34,14 @@ async function capture() {
   const sheet = document.getElementById('calSheet');
   const size  = SIZES[state.size];
 
-  // --- Prepare export clone (never touch the live DOM) ---
-
-  // 1. Deep clone the sheet
+  // Clone the sheet — live DOM stays untouched
   const clone = sheet.cloneNode(true);
-  clone.style.cssText = '';
+  clone.id = 'calSheetExport';
+
   Object.assign(clone.style, {
     width:        size.w + 'px',
     maxWidth:     size.w + 'px',
+    minWidth:     size.w + 'px',
     position:     'fixed',
     top:          '-99999px',
     left:         '-99999px',
@@ -49,61 +49,70 @@ async function capture() {
     boxShadow:    'none',
     transform:    'none',
     animation:    'none',
-    zIndex:       '-1',
+    zIndex:       '0',
+    visibility:   'hidden',
   });
 
-  // 2. Copy computed styles to every element in clone
-  //    so html2canvas sees real colors even without CSS cascade
-  const liveEls  = [sheet, ...sheet.querySelectorAll('*')];
-  const cloneEls = [clone, ...clone.querySelectorAll('*')];
-
-  // Save inline styles of live elements to restore after export
-  const savedStyles = liveEls.map(el => el.getAttribute('style') || '');
-
-  liveEls.forEach((el, i) => {
-    const cs  = getComputedStyle(el);
-    const cel = cloneEls[i];
-    if (!(cel instanceof HTMLElement)) return;
-
-    cel.style.color           = cs.color;
-    cel.style.backgroundColor = cs.backgroundColor;
-    cel.style.borderColor     = cs.borderColor;
-    cel.style.fontFamily      = cs.fontFamily;
-    cel.style.fontSize        = cs.fontSize;
-    cel.style.fontWeight      = cs.fontWeight;
-    cel.style.fontStyle       = cs.fontStyle;
-  });
-
-  // 3. Fix cover image in clone
+  // Fix cover image in clone
   const cloneCover = clone.querySelector('#sheetCover');
   const cloneImg   = clone.querySelector('#coverImg');
   if (state.image && cloneCover && cloneImg) {
     const coverPx = Math.round(size.h * state.imgHeightPct / 100);
-    cloneCover.style.height = coverPx + 'px';
+    cloneCover.style.height     = coverPx + 'px';
+    cloneCover.style.display    = 'block';
+    cloneCover.style.overflow   = 'hidden';
     cloneImg.src = state.image;
 
     if (state.cropRect) {
       const { rx, ry, rw, rh } = state.cropRect;
-      cloneImg.style.width      = (100 / rw) + '%';
-      cloneImg.style.height     = (coverPx / rh) + 'px';
-      cloneImg.style.objectFit  = 'none';
-      cloneImg.style.marginLeft = (-rx / rw * 100) + '%';
-      cloneImg.style.marginTop  = (-ry * coverPx / rh) + 'px';
-      cloneImg.style.maxWidth   = 'none';
+      cloneImg.style.width         = (100 / rw) + '%';
+      cloneImg.style.height        = (coverPx / rh) + 'px';
+      cloneImg.style.objectFit     = 'none';
+      cloneImg.style.marginLeft    = (-rx / rw * 100) + '%';
+      cloneImg.style.marginTop     = (-ry * coverPx / rh) + 'px';
+      cloneImg.style.maxWidth      = 'none';
     } else {
-      cloneImg.style.width          = '100%';
-      cloneImg.style.height         = '100%';
-      cloneImg.style.objectFit      = state.imgFit || 'cover';
+      cloneImg.style.width         = '100%';
+      cloneImg.style.height        = '100%';
+      cloneImg.style.objectFit     = state.imgFit || 'cover';
       cloneImg.style.objectPosition = 'center';
     }
   }
 
-  // 4. Append clone, render, remove — live DOM untouched
+  // Inline computed styles element-by-element using matching by selector
+  // Safe approach: iterate clone elements, find matching live element by position
   document.body.appendChild(clone);
-  await sleep(120);
+  clone.style.visibility = 'visible';
+  await sleep(80); // allow layout
+
+  // Now flatten computed styles — iterate clone elements directly
+  const STYLE_PROPS = [
+    'color', 'backgroundColor', 'borderColor',
+    'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor',
+    'fontFamily', 'fontSize', 'fontWeight', 'fontStyle',
+  ];
+
+  // Build parallel arrays after clone is in DOM (so it has computed styles)
+  const cloneAll = [clone, ...clone.querySelectorAll('*')];
+  const liveAll  = [sheet, ...sheet.querySelectorAll('*')];
+
+  // Only iterate up to min length to avoid index mismatch
+  const len = Math.min(cloneAll.length, liveAll.length);
+  for (let i = 0; i < len; i++) {
+    const liveEl  = liveAll[i];
+    const cloneEl = cloneAll[i];
+    if (!(liveEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
+    const cs = getComputedStyle(liveEl);
+    STYLE_PROPS.forEach(prop => {
+      cloneEl.style[prop] = cs[prop];
+    });
+  }
+
+  await sleep(60);
 
   const bgColor = getComputedStyle(sheet).backgroundColor || '#ffffff';
-  const canvas  = await html2canvas(clone, {
+
+  const canvas = await html2canvas(clone, {
     scale:           2,
     useCORS:         true,
     allowTaint:      true,
@@ -114,11 +123,10 @@ async function capture() {
   });
 
   clone.remove();
-
   return canvas;
 }
 
-// ── SAVE HELPERS ────────────────────────
+// ── SAVE ────────────────────────────────
 
 function savePng(canvas) {
   const a    = document.createElement('a');
