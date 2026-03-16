@@ -46,35 +46,29 @@ export function renderSheetSize() {
   const stageH   = stage.clientHeight - pad;
   const ratio    = size.w / size.h;
 
-  // Рендерная ширина листа: не меньше 600px чтобы месяцы читались
-  const RENDER_MIN = 600;
-  const renderW = Math.max(RENDER_MIN, Math.min(stageW, 1200));
+  let sheetW;
+  if (isMobile) {
+    // На мобиле: лист занимает всю доступную ширину
+    sheetW = Math.max(280, stageW);
+  } else {
+    // Desktop: вписываем по высоте или ширине
+    if (stageW / stageH > ratio) {
+      sheetW = Math.round(Math.min(stageH, 1200) * ratio);
+    } else {
+      sheetW = Math.min(stageW, 1200);
+    }
+  }
 
-  // Задаём листу фиксированную ширину рендера
-  sheet.style.width     = renderW + 'px';
-  sheet.style.maxWidth  = renderW + 'px';
-  sheet.style.minWidth  = renderW + 'px';
+  // Убираем transform — на мобиле лист просто уже
+  sheet.style.transform       = '';
+  sheet.style.transformOrigin = '';
+  sheet.style.width     = sheetW + 'px';
+  sheet.style.maxWidth  = sheetW + 'px';
+  sheet.style.minWidth  = sheetW + 'px';
   sheet.style.height    = 'auto';
 
-  if (isMobile && renderW > stageW) {
-    // На мобиле: масштабируем через transform чтобы вписать в экран
-    const scale = stageW / renderW;
-    sheet.style.transformOrigin = 'top left';
-    sheet.style.transform       = `scale(${scale})`;
-    // Компенсируем collapsed height после scale
-    sheet.style.marginBottom = '';
-    // Обёртке задаём высоту = реальная высота после масштаба
-    requestAnimationFrame(() => {
-      const realH = sheet.offsetHeight * scale;
-      const wrap  = sheet.parentElement;
-      if (wrap) wrap.style.height = realH + 'px';
-    });
-  } else {
-    sheet.style.transform       = '';
-    sheet.style.transformOrigin = '';
-    const wrap = sheet.parentElement;
-    if (wrap) wrap.style.height = '';
-  }
+  const wrap = sheet.parentElement;
+  if (wrap) wrap.style.height = '';
 
   // Подпись в тулбаре
   const info = $('previewSizeInfo');

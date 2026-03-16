@@ -15,6 +15,8 @@ export function initExport() {
     doExport(fmt);
   });
   document.getElementById('previewCancel').addEventListener('click', closePreview);
+  const cancelBtn2 = document.getElementById('previewCancelBtn');
+  if (cancelBtn2) cancelBtn2.addEventListener('click', closePreview);
   document.getElementById('previewModal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closePreview();
   });
@@ -126,10 +128,11 @@ async function renderToDataUrl() {
 
   document.body.appendChild(clone);
   clone.style.visibility = 'visible';
-  await sleep(100);
+  await sleep(120); // дать браузеру применить стили к клону
 
-  // Инлайним вычисленные стили (html2canvas не читает CSS-переменные)
-  inlineStyles(sheet, clone);
+  // Инлайним стили КЛОНА на себя — клон уже в полном размере без transform
+  // Нельзя копировать из живого sheet: там может быть transform:scale от мобильного превью
+  inlineStyles(clone);
 
   await sleep(60);
 
@@ -150,8 +153,9 @@ async function renderToDataUrl() {
   return canvas.toDataURL('image/png', 1.0);
 }
 
-// Копирует вычисленные стили из живых элементов в клон
-function inlineStyles(liveRoot, cloneRoot) {
+// Инлайнит вычисленные стили элементов чтобы html2canvas видел реальные значения.
+// Вызываем на самом клоне (src === dst) — клон уже в DOM без каких-либо transform.
+function inlineStyles(root) {
   const PROPS = [
     'color', 'backgroundColor', 'backgroundImage', 'backgroundSize',
     'backgroundPosition', 'backgroundRepeat',
@@ -160,22 +164,25 @@ function inlineStyles(liveRoot, cloneRoot) {
     'fontFamily', 'fontSize', 'fontWeight', 'fontStyle',
   ];
 
-  const liveAll  = [liveRoot,  ...liveRoot.querySelectorAll('*')];
-  const cloneAll = [cloneRoot, ...cloneRoot.querySelectorAll('*')];
-  const len = Math.min(liveAll.length, cloneAll.length);
-
-  for (let i = 0; i < len; i++) {
-    const live  = liveAll[i];
-    const clone = cloneAll[i];
-    if (!(live instanceof HTMLElement) || !(clone instanceof HTMLElement)) continue;
-    const cs = getComputedStyle(live);
+  const all = [root, ...root.querySelectorAll('*')];
+  // Сначала читаем все вычисленные значения (до того как запишем inline)
+  const computed = all.map(el => {
+    if (!(el instanceof HTMLElement)) return null;
+    const cs = getComputedStyle(el);
+    const vals = {};
+    for (const prop of PROPS) vals[prop] = cs[prop];
+    return vals;
+  });
+  // Потом пишем inline
+  all.forEach((el, i) => {
+    if (!(el instanceof HTMLElement) || !computed[i]) return;
     for (const prop of PROPS) {
-      const val = cs[prop];
+      const val = computed[i][prop];
       if (val && !val.includes('color-mix') && !val.includes('var(')) {
-        clone.style[prop] = val;
+        el.style[prop] = val;
       }
     }
-  }
+  });
 }
 
 // ── SAVE ────────────────────────────────
