@@ -177,22 +177,19 @@ export function renderLegend() {
         return d;
       })
       .filter(d => d.startsWith(String(state.year)))
-      .sort()
-      .map(d => { const [,m,day] = d.split('-'); return `${+day}.${+m}`; });
+      .sort();
 
     items.push({
       isWeekend: false,
       label:     ev.name,
-      dates:     allDates.join(', '),
+      dates:     formatDateRange(allDates),
     });
   }
 
   // Предпраздничные сокращённые дни
   const shortEvs = state.events.filter(e => e.type === 'short');
   if (shortEvs.length > 0) {
-    const shortDates = shortEvs
-      .map(e => { const [,m,d] = e.date.split('-'); return `${+d}.${+m}`; })
-      .join(', ');
+    const shortDates = formatDateRange(shortEvs.map(e => e.date).sort());
     items.push({ isShort: true, label: 'Сокращённый день (−1ч)', dates: shortDates });
   }
 
@@ -387,6 +384,54 @@ function makeMonth(monthIdx, evMap, today) {
 }
 
 // ── HELPERS ─────────────────────────────
+
+// Форматирует массив дат ['2025-01-01', '2025-01-02', ...] в читаемый вид:
+// Последовательные даты одного месяца → диапазон: "1–8 января"
+// Разные месяцы / несмежные → через запятую: "23 февраля, 8 марта"
+function formatDateRange(sortedDates) {
+  const MONTH_GEN = [
+    'января','февраля','марта','апреля','мая','июня',
+    'июля','августа','сентября','октября','ноября','декабря',
+  ];
+
+  if (!sortedDates || sortedDates.length === 0) return '';
+
+  // Группируем по месяцу
+  const byMonth = {};
+  for (const d of sortedDates) {
+    const [, m, day] = d.split('-');
+    const mIdx = parseInt(m, 10) - 1;
+    if (!byMonth[mIdx]) byMonth[mIdx] = [];
+    byMonth[mIdx].push(parseInt(day, 10));
+  }
+
+  const parts = [];
+  for (const mIdx of Object.keys(byMonth).map(Number).sort((a,b) => a-b)) {
+    const days = byMonth[mIdx].sort((a,b) => a-b);
+    // Найти непрерывные диапазоны
+    const ranges = [];
+    let start = days[0], end = days[0];
+    for (let i = 1; i < days.length; i++) {
+      if (days[i] === end + 1) {
+        end = days[i];
+      } else {
+        ranges.push([start, end]);
+        start = end = days[i];
+      }
+    }
+    ranges.push([start, end]);
+
+    for (const [s, e] of ranges) {
+      if (s === e) {
+        parts.push(`${s} ${MONTH_GEN[mIdx]}`);
+      } else {
+        parts.push(`${s}–${e} ${MONTH_GEN[mIdx]}`);
+      }
+    }
+  }
+
+  return parts.join(', ');
+}
 
 function buildEventMap() {
   const map = {};
