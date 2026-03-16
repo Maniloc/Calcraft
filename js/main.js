@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════
-// main.js — Entry point & event wiring
+// main.js — Entry point
 // ═══════════════════════════════════════
 
 import { state } from './state.js';
-import { render, renderEventList, syncImageUI, applyTheme } from './render.js';
+import { render, renderEventList, renderCoverText, syncImageUI, applyTheme } from './render.js';
 import { initCrop } from './crop.js';
 import { initExport } from './export.js';
 
@@ -38,23 +38,19 @@ function bindTabs() {
 // ── CONTENT TAB ─────────────────────────
 
 function bindContent() {
-  document.getElementById('yearPrev').addEventListener('click', () => {
+  $('yearPrev').addEventListener('click', () => {
     state.year--;
-    document.getElementById('yearDisplay').textContent = state.year;
+    $('yearDisplay').textContent = state.year;
     rerender();
   });
-  document.getElementById('yearNext').addEventListener('click', () => {
+  $('yearNext').addEventListener('click', () => {
     state.year++;
-    document.getElementById('yearDisplay').textContent = state.year;
+    $('yearDisplay').textContent = state.year;
     rerender();
   });
 
-  document.getElementById('calTitle').addEventListener('input', e => {
-    state.title = e.target.value; rerender();
-  });
-  document.getElementById('calSubtitle').addEventListener('input', e => {
-    state.subtitle = e.target.value; rerender();
-  });
+  $('calTitle').addEventListener('input', e => { state.title = e.target.value; rerender(); });
+  $('calSubtitle').addEventListener('input', e => { state.subtitle = e.target.value; rerender(); });
 
   document.querySelectorAll('.day-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -96,11 +92,10 @@ function bindDesign() {
     });
   });
 
-  const picker = document.getElementById('customAccent');
-  picker.addEventListener('input', e => {
+  $('customAccent').addEventListener('input', e => {
     setAccent(e.target.value);
     document.querySelectorAll('.accent-btn').forEach(b => b.classList.remove('active'));
-    picker.classList.add('active');
+    $('customAccent').classList.add('active');
   });
 
   document.querySelectorAll('.size-btn').forEach(btn => {
@@ -111,31 +106,25 @@ function bindDesign() {
     });
   });
 
-  document.getElementById('showWeekendColor').addEventListener('change', e => {
-    state.showWeekendColor = e.target.checked; rerender();
-  });
-  document.getElementById('showWeekNums').addEventListener('change', e => {
-    state.showWeekNums = e.target.checked; rerender();
-  });
+  $('showWeekendColor').addEventListener('change', e => { state.showWeekendColor = e.target.checked; rerender(); });
+  $('showWeekNums').addEventListener('change', e => { state.showWeekNums = e.target.checked; rerender(); });
 
-  // Work stats toggle
-  document.getElementById('showWorkStats').addEventListener('change', e => {
+  $('showWorkStats').addEventListener('change', e => {
     state.showWorkStats = e.target.checked;
-    document.getElementById('hoursGroup').style.display = state.showWorkStats ? 'block' : 'none';
+    $('hoursGroup').style.display = state.showWorkStats ? 'block' : 'none';
     rerender();
   });
 
-  // Hours per day picker
-  document.getElementById('hoursMinus').addEventListener('click', () => {
+  $('hoursMinus').addEventListener('click', () => {
     if (state.hoursPerDay <= 1) return;
     state.hoursPerDay--;
-    document.getElementById('hoursDisplay').textContent = state.hoursPerDay;
+    $('hoursDisplay').textContent = state.hoursPerDay;
     rerender();
   });
-  document.getElementById('hoursPlus').addEventListener('click', () => {
+  $('hoursPlus').addEventListener('click', () => {
     if (state.hoursPerDay >= 24) return;
     state.hoursPerDay++;
-    document.getElementById('hoursDisplay').textContent = state.hoursPerDay;
+    $('hoursDisplay').textContent = state.hoursPerDay;
     rerender();
   });
 }
@@ -143,7 +132,7 @@ function bindDesign() {
 // ── IMAGE TAB ───────────────────────────
 
 function bindImage() {
-  document.getElementById('imgInput').addEventListener('change', e => {
+  $('imgInput').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -156,39 +145,98 @@ function bindImage() {
     reader.readAsDataURL(file);
   });
 
-  document.getElementById('removeImgBtn').addEventListener('click', () => {
+  $('removeImgBtn').addEventListener('click', () => {
     state.image    = null;
     state.cropRect = null;
-    document.getElementById('imgInput').value = '';
+    $('imgInput').value = '';
     syncImageUI();
     rerender();
   });
 
-  const slider = document.getElementById('imgHeightRange');
+  const slider = $('imgHeightRange');
   slider.addEventListener('input', () => {
     state.imgHeightPct = parseInt(slider.value, 10);
-    document.getElementById('imgHeightVal').textContent = state.imgHeightPct + '%';
+    $('imgHeightVal').textContent = state.imgHeightPct + '%';
     rerender();
+  });
+
+  // Fit buttons
+  document.querySelectorAll('.fit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.fit-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.imgFit   = btn.dataset.fit;
+      state.cropRect = null; // сбрасываем кроп при смене режима
+      rerender();
+    });
+  });
+
+  // Cover text
+  $('coverText').addEventListener('input', e => {
+    state.coverText = e.target.value;
+    renderCoverText();
+  });
+
+  $('coverTextSize').addEventListener('input', e => {
+    state.coverTextSize = parseInt(e.target.value, 10);
+    $('coverTextSizeVal').textContent = state.coverTextSize + 'px';
+    renderCoverText();
+  });
+
+  // Cover text color presets
+  document.querySelectorAll('.cover-color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cover-color-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.coverTextColor = btn.dataset.color;
+      $('coverTextColorPicker').value = btn.dataset.color;
+      renderCoverText();
+    });
+  });
+
+  $('coverTextColorPicker').addEventListener('input', e => {
+    state.coverTextColor = e.target.value;
+    document.querySelectorAll('.cover-color-btn').forEach(b => b.classList.remove('active'));
+    renderCoverText();
+  });
+
+  // Position grid
+  document.querySelectorAll('.pos-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.coverTextPosition = btn.dataset.pos;
+      renderCoverText();
+    });
   });
 }
 
 // ── EVENTS TAB ──────────────────────────
 
 function bindEvents() {
-  document.getElementById('addEventBtn').addEventListener('click', addEvent);
-  document.getElementById('newEventName').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addEvent();
+  // Type selector
+  document.querySelectorAll('.event-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.event-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
   });
+
+  $('addEventBtn').addEventListener('click', addEvent);
+  $('newEventName').addEventListener('keydown', e => { if (e.key === 'Enter') addEvent(); });
 }
 
 function addEvent() {
-  const name   = document.getElementById('newEventName').value.trim();
-  const date   = document.getElementById('newEventDate').value;
-  const color  = document.getElementById('newEventColor').value;
-  const repeat = document.getElementById('newEventRepeat').checked;
+  const name   = $('newEventName').value.trim();
+  const date   = $('newEventDate').value;
+  const color  = $('newEventColor').value;
+  const repeat = $('newEventRepeat').checked;
+  const typeBtn = document.querySelector('.event-type-btn.active');
+  const type   = typeBtn ? typeBtn.dataset.type : 'holiday';
+
   if (!name || !date) return;
-  state.events.push({ id: Date.now() + Math.random(), name, date, color, repeat });
-  document.getElementById('newEventName').value = '';
+  state.events.push({ id: Date.now() + Math.random(), name, date, color, repeat, type });
+  $('newEventName').value = '';
   rerender();
 }
 
@@ -207,3 +255,5 @@ function setAccent(color) {
   applyTheme();
   rerender();
 }
+
+function $(id) { return document.getElementById(id); }

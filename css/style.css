@@ -515,3 +515,85 @@ body {
 
 /* ── HOURS PICKER (reuse year-picker style) ── */
 .hours-picker { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* ── FIT BUTTONS ── */
+.fit-grid { display: flex; gap: 5px; margin-bottom: 0; }
+.fit-btn {
+  flex: 1; padding: 7px; border: 1.5px solid var(--sidebar-border);
+  border-radius: var(--r-md); background: white;
+  font-family: var(--font-ui); font-size: 0.75rem; font-weight: 500;
+  color: var(--ink-500); cursor: pointer; text-align: center; transition: all var(--transition);
+}
+.fit-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* ── COVER TEXT ── */
+.sheet-cover { position: relative; }
+
+.cover-text-overlay {
+  position: absolute; inset: 0;
+  display: flex; pointer-events: none;
+  padding: 24px;
+}
+.cover-text-overlay.top-left     { align-items: flex-start; justify-content: flex-start; }
+.cover-text-overlay.top-center   { align-items: flex-start; justify-content: center; }
+.cover-text-overlay.top-right    { align-items: flex-start; justify-content: flex-end; }
+.cover-text-overlay.center-left  { align-items: center;     justify-content: flex-start; }
+.cover-text-overlay.center       { align-items: center;     justify-content: center; }
+.cover-text-overlay.center-right { align-items: center;     justify-content: flex-end; }
+.cover-text-overlay.bottom-left  { align-items: flex-end;   justify-content: flex-start; }
+.cover-text-overlay.bottom-center{ align-items: flex-end;   justify-content: center; }
+.cover-text-overlay.bottom-right { align-items: flex-end;   justify-content: flex-end; }
+
+.cover-text-content {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.15;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+  white-space: pre-wrap;
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+/* Cover text color presets */
+.cover-text-colors {
+  display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+}
+.cover-color-btn {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2.5px solid transparent; cursor: pointer; transition: all var(--transition);
+}
+.cover-color-btn.active { box-shadow: 0 0 0 2.5px var(--accent); border-color: white; }
+.cover-color-btn:hover { transform: scale(1.1); }
+
+/* Position grid */
+.position-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.pos-btn {
+  padding: 8px; border: 1.5px solid var(--sidebar-border);
+  border-radius: var(--r-sm); background: white;
+  font-size: 0.85rem; cursor: pointer; text-align: center;
+  transition: all var(--transition); color: var(--ink-500);
+}
+.pos-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.pos-btn:hover:not(.active) { border-color: var(--ink-300); }
+
+/* ── EVENT TYPE SELECTOR ── */
+.event-type-row { display: flex; gap: 5px; margin-bottom: 6px; }
+.event-type-btn {
+  flex: 1; padding: 6px; border: 1.5px solid var(--sidebar-border);
+  border-radius: var(--r-md); background: white;
+  font-family: var(--font-ui); font-size: 0.72rem; font-weight: 500;
+  color: var(--ink-500); cursor: pointer; transition: all var(--transition);
+}
+.event-type-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* Event badge */
+.event-badge {
+  font-size: 0.58rem; font-weight: 600; padding: 1px 4px;
+  border-radius: 3px; flex-shrink: 0; letter-spacing: 0.04em;
+}
+.event-badge--holiday { background: color-mix(in srgb, #C0392B 12%, white); color: #C0392B; }
+.event-badge--event   { background: color-mix(in srgb, #3B5BDB 12%, white); color: #3B5BDB; }
