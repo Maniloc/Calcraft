@@ -217,7 +217,16 @@ export function renderLegend() {
 export function renderEventList(onDelete) {
   const list = $('eventList');
   list.innerHTML = '';
-  state.events.forEach(ev => {
+  // Показываем только пользовательские события (не системные праздники РФ)
+  const userEvents = state.events.filter(e => !e.system);
+  if (userEvents.length === 0) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'font-size:0.75rem;color:var(--ink-400,#a09890);padding:8px 0 4px;';
+    empty.textContent = 'Нет добавленных событий';
+    list.appendChild(empty);
+    return;
+  }
+  userEvents.forEach(ev => {
     const item = el('div', 'event-item');
 
     const dot = el('div', 'event-dot');
