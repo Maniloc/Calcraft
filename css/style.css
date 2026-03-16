@@ -409,17 +409,28 @@ body {
   line-height: 1.6; cursor: default;
 }
 .mini-cell.is-empty { background: none; }
-.mini-cell.is-weekend { color: var(--cal-weekend); }
-.mini-cell.is-today {
-  background: var(--cal-weekend);
-  color: white !important;
-  border-radius: 3px;
-  font-weight: 700;
-}
-.mini-cell.is-holiday {
+
+/* Выходной день — цветной фон + жирный текст */
+.mini-cell.is-weekend {
+  background: color-mix(in srgb, var(--cal-weekend) 12%, var(--cal-cell-bg));
   color: var(--cal-weekend);
   font-weight: 700;
+  border-radius: 3px;
 }
+
+/* Праздник — более насыщенный фон */
+.mini-cell.is-holiday {
+  background: color-mix(in srgb, var(--cal-weekend) 20%, var(--cal-cell-bg));
+  color: var(--cal-weekend);
+  font-weight: 800;
+  border-radius: 3px;
+}
+
+/* Если праздник совпал с выходным — ещё насыщеннее */
+.mini-cell.is-weekend.is-holiday {
+  background: color-mix(in srgb, var(--cal-weekend) 25%, var(--cal-cell-bg));
+}
+
 .mini-cell.has-event::after {
   content: '';
   display: block;
