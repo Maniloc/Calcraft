@@ -1,76 +1,52 @@
-// ═══════════════════════════════════════════════
-// render.js — All DOM rendering
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════
+// render.js — DOM rendering
+// ═══════════════════════════════════════
 
-import { state, MONTHS_RU, DOW_LABELS, SIZES } from './state.js';
+import { state, MONTHS_RU, DOW_SHORT } from './state.js';
 
-// ── PUBLIC: full re-render ───────────────────
+// ── PUBLIC ──────────────────────────────
 
 export function render() {
   applyTheme();
+  renderCover();
   renderHeader();
-  renderImage();
-  renderGrid();
-  renderLegend();
+  renderMonths();
 }
-
-// ── THEME ────────────────────────────────────
 
 export function applyTheme() {
-  const sheet = getSheet();
+  const sheet = sheet_();
   sheet.dataset.theme = state.theme;
-  document.documentElement.style.setProperty('--accent', state.accent);
-  document.documentElement.style.setProperty(
-    '--accent-light',
-    hexToRgba(state.accent, 0.10),
-  );
+  const root = document.documentElement;
+  root.style.setProperty('--accent', state.accent);
+  root.style.setProperty('--accent-light', hexAlpha(state.accent, 0.10));
+  // weekend color follows accent
+  sheet.style.setProperty('--cal-weekend', state.showWeekendColor ? state.accent : 'var(--cal-muted)');
 }
 
-// ── HEADER ───────────────────────────────────
+export function renderCover() {
+  const cover = document.getElementById('sheetCover');
+  const img   = document.getElementById('coverImg');
+  if (!state.image) { cover.style.display = 'none'; return; }
 
-export function renderHeader() {
-  if (!state.month) return;
-
-  const autoTitle = MONTHS_RU[state.month.getMonth()];
-  const year      = state.month.getFullYear();
-
-  setText('sheetTitle',    state.title || autoTitle);
-  setText('sheetYear',     year);
-  setText('sheetSubtitle', state.subtitle);
-
-  // Preview toolbar label
-  const sizeInfo = SIZES[state.size];
-  if (sizeInfo) setText('previewSizeInfo', sizeInfo.label);
-}
-
-// ── IMAGE ─────────────────────────────────────
-
-export function renderImage() {
-  const area = document.getElementById('sheetImage');
-  const img  = document.getElementById('sheetImg');
-
-  if (!state.image) {
-    area.style.display = 'none';
-    return;
-  }
-
-  area.style.display = 'block';
-  area.style.height  = state.imgHeight + 'px';
-  img.src            = state.image;
+  cover.style.display = 'block';
+  // Height as % of viewport-like preview — set via actual px via JS after layout
+  cover.style.height = state.imgHeightPct + 'vh';
+  img.src = state.image;
 
   if (state.cropRect) {
     const { rx, ry, rw, rh } = state.cropRect;
+    const h = cover.offsetHeight || 200;
     img.style.width          = (100 / rw) + '%';
-    img.style.height         = (state.imgHeight / rh) + 'px';
+    img.style.height         = (h / rh) + 'px';
     img.style.objectFit      = 'none';
     img.style.marginLeft     = (-rx / rw * 100) + '%';
-    img.style.marginTop      = (-ry * state.imgHeight / rh) + 'px';
+    img.style.marginTop      = (-ry * h / rh) + 'px';
     img.style.maxWidth       = 'none';
     img.style.objectPosition = '';
   } else {
     img.style.width          = '100%';
     img.style.height         = '100%';
-    img.style.objectFit      = state.imgFit;
+    img.style.objectFit      = 'cover';
     img.style.objectPosition = 'center';
     img.style.marginLeft     = '';
     img.style.marginTop      = '';
@@ -78,217 +54,149 @@ export function renderImage() {
   }
 }
 
-// ── CALENDAR GRID ─────────────────────────────
+export function renderHeader() {
+  setText('sheetYear',     state.year);
+  setText('sheetTitle',    state.title);
+  setText('sheetSubtitle', state.subtitle);
+}
 
-export function renderGrid() {
-  if (!state.month) return;
-
-  const grid  = document.getElementById('calGrid');
+export function renderMonths() {
+  const grid = document.getElementById('monthsGrid');
   grid.innerHTML = '';
 
-  const year  = state.month.getFullYear();
-  const month = state.month.getMonth();
+  // Apply layout class
+  grid.className = 'months-grid layout-' + state.layout;
 
-  // Day-of-week headers (Mon-first)
-  DOW_LABELS.forEach((label, i) => {
-    // i=0→Mon(JS=1)…i=5→Sat(JS=6)…i=6→Sun(JS=0)
-    const jsDow = i === 6 ? 0 : i + 1;
-    const isWE  = state.weekends.has(jsDow);
-    grid.appendChild(makeDowCell(label, isWE));
-  });
+  // Fix border logic for different layouts
+  updateMonthBorders(grid);
 
-  const firstDay = new Date(year, month, 1);
-  const lastDate = new Date(year, month + 1, 0).getDate();
-  const startDow = (firstDay.getDay() + 6) % 7; // Mon=0
-  const today    = new Date();
-  const evMap    = buildEventMap();
+  const evMap   = buildEventMap();
+  const today   = new Date();
 
-  // Empty padding cells
-  for (let i = 0; i < startDow; i++) {
-    grid.appendChild(makeEmptyCell());
-  }
-
-  // Day cells
-  for (let d = 1; d <= lastDate; d++) {
-    const date    = new Date(year, month, d);
-    const jsDow   = date.getDay();
-    const isWE    = state.weekends.has(jsDow);
-    const isToday = sameDay(date, today);
-    const key     = toKey(year, month + 1, d);
-    const entries = evMap[key] || [];
-    const isHol   = entries.some(e => e.type === 'holiday');
-
-    grid.appendChild(makeDayCell(d, isWE, isToday, isHol, entries));
+  for (let m = 0; m < 12; m++) {
+    grid.appendChild(makeMonth(m, evMap, today));
   }
 }
-
-// ── LEGEND ───────────────────────────────────
-
-export function renderLegend() {
-  const footer = document.getElementById('sheetFooter');
-  const legend = document.getElementById('calLegend');
-  legend.innerHTML = '';
-
-  if (!state.showLegend) {
-    footer.style.display = 'none';
-    return;
-  }
-
-  footer.style.display = '';
-
-  if (state.weekends.size > 0) {
-    legend.appendChild(makeLegendItem(state.accent, 'Выходной'));
-  }
-
-  const seen = new Set();
-  for (const ev of state.events) {
-    if (seen.has(ev.color + ev.name)) continue;
-    seen.add(ev.color + ev.name);
-    legend.appendChild(makeLegendItem(ev.color, ev.name));
-  }
-
-  for (const h of state.holidays) {
-    legend.appendChild(makeLegendItem(state.accent, h.name));
-  }
-
-  if (!legend.children.length) {
-    footer.style.display = 'none';
-  }
-}
-
-// ── EVENT/HOLIDAY SIDEBAR LISTS ──────────────
 
 export function renderEventList(onDelete) {
-  renderList('eventList', state.events, onDelete, ev => ev.color);
-}
+  const list = document.getElementById('eventList');
+  list.innerHTML = '';
+  state.events.forEach(ev => {
+    const item = document.createElement('div');
+    item.className = 'event-item';
 
-export function renderHolidayList(onDelete) {
-  renderList('holidayList', state.holidays, onDelete, () => state.accent);
-}
+    const dot  = el('div', 'event-dot');
+    dot.style.background = ev.color;
 
-// ── IMAGE UI ─────────────────────────────────
+    const name = el('span', 'event-name');
+    name.textContent = ev.name;
+    name.title = ev.name;
+
+    const date = el('span', 'event-date');
+    date.textContent = fmtDate(ev.date);
+
+    const del = el('button', 'event-del');
+    del.textContent = '×';
+    del.addEventListener('click', () => onDelete(ev.id));
+
+    item.append(dot, name, date, del);
+    list.appendChild(item);
+  });
+}
 
 export function syncImageUI() {
-  const has     = !!state.image;
-  const zone    = document.getElementById('uploadZone');
-  const thumb   = document.getElementById('uploadThumb');
-  const ph      = document.getElementById('uploadPlaceholder');
-  const controls= document.getElementById('imageControls');
-  const hGroup  = document.getElementById('imgHeightGroup');
-  const fGroup  = document.getElementById('imgFitGroup');
+  const has      = !!state.image;
+  const zone     = document.getElementById('uploadZone');
+  const thumb    = document.getElementById('uploadThumb');
+  const controls = document.getElementById('imageControls');
+  const hGroup   = document.getElementById('imgHeightGroup');
 
-  if (has) {
-    thumb.src = state.image;
-    zone.classList.add('has-image');
-  } else {
-    thumb.src = '';
-    zone.classList.remove('has-image');
-  }
-
+  thumb.src = has ? state.image : '';
+  zone.classList.toggle('has-image', has);
   controls.style.display = has ? 'flex' : 'none';
   hGroup.style.display   = has ? 'block' : 'none';
-  fGroup.style.display   = has ? 'block' : 'none';
 }
 
-// ── HELPERS ──────────────────────────────────
+// ── MONTH BUILDER ──────────────────────
 
-function makeDowCell(label, isWE) {
-  const el = document.createElement('div');
-  el.className = 'cal-dow' + (isWE ? ' is-weekend' : '');
-  el.textContent = label;
-  return el;
-}
+function makeMonth(monthIdx, evMap, today) {
+  const wrap = el('div', 'month-block');
 
-function makeEmptyCell() {
-  const el = document.createElement('div');
-  el.className = 'cal-cell is-empty';
-  return el;
-}
+  const name = el('div', 'month-name');
+  name.textContent = MONTHS_RU[monthIdx];
+  wrap.appendChild(name);
 
-function makeDayCell(d, isWE, isToday, isHol, entries) {
-  const el = document.createElement('div');
-  const classes = ['cal-cell'];
-  if (isWE)    classes.push('is-weekend');
-  if (isToday) classes.push('is-today');
-  if (isHol)   classes.push('is-holiday');
-  el.className = classes.join(' ');
+  const grid = el('div', 'mini-grid');
 
-  const num = document.createElement('div');
-  num.className   = 'cell-num';
-  num.textContent = d;
-  el.appendChild(num);
+  // DOW headers Mon-Sun
+  DOW_SHORT.forEach((label, i) => {
+    const jsDow = i === 6 ? 0 : i + 1;
+    const d = el('div', 'mini-dow' + (state.weekends.has(jsDow) ? ' is-weekend' : ''));
+    d.textContent = label;
+    grid.appendChild(d);
+  });
 
-  if (entries.length) {
-    const tags = document.createElement('div');
-    tags.className = 'cell-tags';
-    entries.slice(0, 3).forEach(ev => {
-      const tag = document.createElement('div');
-      tag.className = 'cell-tag';
-      tag.style.background = ev.color;
-      tag.textContent = ev.name;
-      tags.appendChild(tag);
-    });
-    el.appendChild(tags);
+  // First day of month (Mon-based offset)
+  const firstDay = new Date(state.year, monthIdx, 1);
+  const lastDate = new Date(state.year, monthIdx + 1, 0).getDate();
+  const startDow = (firstDay.getDay() + 6) % 7;
+
+  for (let i = 0; i < startDow; i++) {
+    grid.appendChild(el('div', 'mini-cell is-empty'));
   }
 
-  return el;
+  for (let d = 1; d <= lastDate; d++) {
+    const date   = new Date(state.year, monthIdx, d);
+    const jsDow  = date.getDay();
+    const isWE   = state.weekends.has(jsDow);
+    const isToday = sameDay(date, today);
+    const key    = toKey(state.year, monthIdx + 1, d);
+    const evs    = evMap[key] || [];
+    const isHol  = evs.some(e => e.type === 'holiday');
+
+    const classes = ['mini-cell'];
+    if (isWE)    classes.push('is-weekend');
+    if (isToday) classes.push('is-today');
+    if (isHol)   classes.push('is-holiday');
+    if (evs.length && !isHol) classes.push('has-event');
+
+    const cell = el('div', classes.join(' '));
+    cell.textContent = d;
+
+    // Show event dot color via CSS var
+    const firstEv = evs.find(e => e.type === 'event');
+    if (firstEv) cell.style.setProperty('--event-color', firstEv.color);
+
+    grid.appendChild(cell);
+  }
+
+  wrap.appendChild(grid);
+  return wrap;
 }
 
-function makeLegendItem(color, label) {
-  const item = document.createElement('div');
-  item.className = 'legend-item';
+// ── HELPERS ─────────────────────────────
 
-  const dot = document.createElement('div');
-  dot.className = 'legend-swatch';
-  dot.style.background = color;
-
-  const txt = document.createElement('span');
-  txt.textContent = label;
-
-  item.append(dot, txt);
-  return item;
-}
-
-function renderList(containerId, items, onDelete, colorFn) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = '';
-  items.forEach(item => {
-    const row = document.createElement('div');
-    row.className = 'event-item';
-
-    const dot = document.createElement('div');
-    dot.className = 'event-color-dot';
-    dot.style.background = colorFn(item);
-
-    const name = document.createElement('span');
-    name.className   = 'event-name';
-    name.textContent = item.name;
-    name.title       = item.name;
-
-    const date = document.createElement('span');
-    date.className   = 'event-date';
-    date.textContent = formatDate(item.date);
-
-    const del = document.createElement('button');
-    del.className   = 'event-del';
-    del.textContent = '×';
-    del.title       = 'Удалить';
-    del.addEventListener('click', () => onDelete(item.id));
-
-    row.append(dot, name, date, del);
-    el.appendChild(row);
-  });
+function updateMonthBorders(grid) {
+  // CSS handles most border cases via nth-child,
+  // but we also need to remove bottom border from last row
+  // This is set dynamically after render via CSS only
 }
 
 function buildEventMap() {
   const map = {};
   for (const ev of state.events) {
-    if (!map[ev.date]) map[ev.date] = [];
-    map[ev.date].push({ name: ev.name, color: ev.color, type: 'event' });
-  }
-  for (const h of state.holidays) {
-    if (!map[h.date]) map[h.date] = [];
-    map[h.date].push({ name: h.name, color: state.accent, type: 'holiday' });
+    let key = ev.date;
+    // If repeat, generate key for current year
+    if (ev.repeat) {
+      const parts = ev.date.split('-');
+      key = `${state.year}-${parts[1]}-${parts[2]}`;
+    }
+    if (!map[key]) map[key] = [];
+    map[key].push({
+      name:  ev.name,
+      color: ev.color,
+      type:  'holiday',
+    });
   }
   return map;
 }
@@ -300,27 +208,31 @@ function toKey(y, m, d) {
 function sameDay(a, b) {
   return a.getFullYear() === b.getFullYear()
     && a.getMonth() === b.getMonth()
-    && a.getDate() === b.getDate();
+    && a.getDate()  === b.getDate();
 }
 
-function formatDate(str) {
-  if (!str) return '';
-  const [y, m, d] = str.split('-');
+function fmtDate(s) {
+  if (!s) return '';
+  const [y,m,d] = s.split('-');
   return `${d}.${m}.${y}`;
 }
 
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
 }
 
-function getSheet() {
-  return document.getElementById('calendarSheet');
+function setText(id, val) {
+  const e = document.getElementById(id);
+  if (e) e.textContent = val ?? '';
 }
 
-function hexToRgba(hex, alpha) {
-  const r = parseInt(hex.slice(1,3), 16);
-  const g = parseInt(hex.slice(3,5), 16);
-  const b = parseInt(hex.slice(5,7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
+function sheet_() { return document.getElementById('calSheet'); }
+
+function hexAlpha(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
 }

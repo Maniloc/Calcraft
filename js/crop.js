@@ -1,175 +1,115 @@
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════
 // crop.js — Image crop modal
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════
 
 import { state } from './state.js';
-import { renderImage } from './render.js';
+import { renderCover } from './render.js';
 
-// ── PRIVATE STATE ─────────────────────────────
-
-let dragging   = false;
-let cropRatio  = 0;         // 0 = free
-let dragStart  = { x:0, y:0 };
-let selection  = { x:0, y:0, w:0, h:0 };
-let wrapRect   = null;
-let naturalW   = 0;
-let naturalH   = 0;
-
-// ── INIT ──────────────────────────────────────
+let dragging  = false;
+let ratio     = 0;
+let start     = { x:0, y:0 };
+let sel       = { x:0, y:0, w:0, h:0 };
+let wRect     = null;
+let natW = 0, natH = 0;
 
 export function initCrop() {
-  // Open / close
-  document.getElementById('openCropBtn').addEventListener('click', openModal);
-  document.getElementById('cropClose').addEventListener('click', closeModal);
-  document.getElementById('cancelCrop').addEventListener('click', closeModal);
-  document.getElementById('applyCrop').addEventListener('click', applySelection);
+  document.getElementById('openCropBtn').addEventListener('click', open);
+  document.getElementById('cropClose').addEventListener('click', close);
+  document.getElementById('cancelCrop').addEventListener('click', close);
+  document.getElementById('applyCrop').addEventListener('click', apply);
   document.getElementById('cropBackdrop').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeModal();
+    if (e.target === e.currentTarget) close();
   });
 
-  // Ratio presets
-  document.querySelectorAll('.ratio-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      cropRatio = parseFloat(btn.dataset.ratio) || 0;
+  document.querySelectorAll('.ratio-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.ratio-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      ratio = parseFloat(b.dataset.ratio) || 0;
     });
   });
 
-  // Mouse
   const wrap = document.getElementById('cropWrap');
-  wrap.addEventListener('mousedown', onPointerDown);
-  window.addEventListener('mousemove', onPointerMove);
-  window.addEventListener('mouseup',   onPointerUp);
+  wrap.addEventListener('mousedown', e => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', e => { if (dragging) moveDrag(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', () => { dragging = false; });
 
-  // Touch
-  wrap.addEventListener('touchstart', e => {
-    e.preventDefault();
-    onPointerDown(e.touches[0]);
-  }, { passive: false });
-
-  window.addEventListener('touchmove', e => {
-    if (!dragging) return;
-    e.preventDefault();
-    onPointerMove(e.touches[0]);
-  }, { passive: false });
-
-  window.addEventListener('touchend', onPointerUp);
+  wrap.addEventListener('touchstart', e => { e.preventDefault(); startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive:false });
+  window.addEventListener('touchmove', e => { if (!dragging) return; e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive:false });
+  window.addEventListener('touchend', () => { dragging = false; });
 }
 
-// ── MODAL OPEN/CLOSE ──────────────────────────
-
-function openModal() {
+function open() {
   if (!state.image) return;
-
-  const src = document.getElementById('cropSrc');
-  src.src = state.image;
-  src.onload = () => {
-    naturalW = src.naturalWidth;
-    naturalH = src.naturalHeight;
-  };
-
-  // Reset selection
-  selection = { x:0, y:0, w:0, h:0 };
-  updateRectEl();
-  document.getElementById('cropDims').textContent = '';
+  const img = document.getElementById('cropSrc');
+  img.src = state.image;
+  img.onload = () => { natW = img.naturalWidth; natH = img.naturalHeight; };
   document.getElementById('cropRect').style.display = 'none';
+  document.getElementById('cropDims').textContent = '';
+  sel = { x:0, y:0, w:0, h:0 };
   document.getElementById('cropBackdrop').classList.add('open');
 }
 
-function closeModal() {
-  document.getElementById('cropBackdrop').classList.remove('open');
-}
+function close() { document.getElementById('cropBackdrop').classList.remove('open'); }
 
-// ── APPLY ─────────────────────────────────────
-
-function applySelection() {
-  const imgEl = document.getElementById('cropSrc');
-  const iRect = imgEl.getBoundingClientRect();
-  const wRect = document.getElementById('cropWrap').getBoundingClientRect();
-
-  const offsetX = iRect.left - wRect.left;
-  const offsetY = iRect.top  - wRect.top;
-
-  const rx = (selection.x - offsetX) / iRect.width;
-  const ry = (selection.y - offsetY) / iRect.height;
-  const rw = selection.w / iRect.width;
-  const rh = selection.h / iRect.height;
-
+function apply() {
+  const img   = document.getElementById('cropSrc');
+  const iRect = img.getBoundingClientRect();
+  const wR    = document.getElementById('cropWrap').getBoundingClientRect();
+  const rx = (sel.x - (iRect.left - wR.left)) / iRect.width;
+  const ry = (sel.y - (iRect.top  - wR.top))  / iRect.height;
+  const rw = sel.w / iRect.width;
+  const rh = sel.h / iRect.height;
   state.cropRect = (rw >= 0.02 && rh >= 0.02)
-    ? { rx: clamp(rx,0,1), ry: clamp(ry,0,1), rw: clamp(rw,0,1), rh: clamp(rh,0,1) }
+    ? { rx: clamp(rx), ry: clamp(ry), rw: clamp(rw), rh: clamp(rh) }
     : null;
-
-  closeModal();
-  renderImage();
+  close();
+  renderCover();
 }
 
-// ── POINTER HANDLERS ──────────────────────────
-
-function onPointerDown(e) {
+function startDrag(cx, cy) {
   dragging = true;
-  wrapRect = document.getElementById('cropWrap').getBoundingClientRect();
-  const x = e.clientX - wrapRect.left;
-  const y = e.clientY - wrapRect.top;
-  dragStart = { x, y };
-  selection = { x, y, w:0, h:0 };
+  wRect = document.getElementById('cropWrap').getBoundingClientRect();
+  const x = cx - wRect.left;
+  const y = cy - wRect.top;
+  start = { x, y };
+  sel = { x, y, w:0, h:0 };
 }
 
-function onPointerMove(e) {
-  if (!dragging) return;
+function moveDrag(cx, cy) {
+  let x = clampV(cx - wRect.left, 0, wRect.width);
+  let y = clampV(cy - wRect.top,  0, wRect.height);
+  let w = x - start.x;
+  let h = y - start.y;
 
-  let x = clamp(e.clientX - wrapRect.left, 0, wrapRect.width);
-  let y = clamp(e.clientY - wrapRect.top,  0, wrapRect.height);
-  let w = x - dragStart.x;
-  let h = y - dragStart.y;
-
-  if (cropRatio > 0) {
+  if (ratio > 0) {
     const sign = h >= 0 ? 1 : -1;
-    h = sign * Math.abs(w) / cropRatio;
-    // clamp h to wrap bounds
-    const endY = dragStart.y + h;
-    if (endY < 0)              h = -dragStart.y;
-    if (endY > wrapRect.height) h = wrapRect.height - dragStart.y;
+    h = sign * Math.abs(w) / ratio;
+    const ey = start.y + h;
+    if (ey < 0)              h = -start.y;
+    if (ey > wRect.height)   h = wRect.height - start.y;
   }
 
-  selection = {
-    x: w >= 0 ? dragStart.x : dragStart.x + w,
-    y: h >= 0 ? dragStart.y : dragStart.y + h,
-    w: Math.abs(w),
-    h: Math.abs(h),
+  sel = {
+    x: w >= 0 ? start.x : start.x + w,
+    y: h >= 0 ? start.y : start.y + h,
+    w: Math.abs(w), h: Math.abs(h),
   };
 
-  updateRectEl();
-  updateDims();
-}
-
-function onPointerUp() {
-  dragging = false;
-}
-
-// ── UI HELPERS ────────────────────────────────
-
-function updateRectEl() {
   const rect = document.getElementById('cropRect');
-  if (selection.w < 2 || selection.h < 2) {
-    rect.style.display = 'none';
-    return;
-  }
+  if (sel.w < 2 || sel.h < 2) { rect.style.display = 'none'; return; }
   rect.style.display = 'block';
-  rect.style.left    = selection.x + 'px';
-  rect.style.top     = selection.y + 'px';
-  rect.style.width   = selection.w + 'px';
-  rect.style.height  = selection.h + 'px';
-}
+  rect.style.left    = sel.x + 'px';
+  rect.style.top     = sel.y + 'px';
+  rect.style.width   = sel.w + 'px';
+  rect.style.height  = sel.h + 'px';
 
-function updateDims() {
-  const imgEl  = document.getElementById('cropSrc');
-  const iRect  = imgEl.getBoundingClientRect();
-  const scaleX = naturalW / iRect.width;
-  const scaleY = naturalH / iRect.height;
-  const pw = Math.round(selection.w * scaleX);
-  const ph = Math.round(selection.h * scaleY);
+  const img   = document.getElementById('cropSrc');
+  const iRect = img.getBoundingClientRect();
+  const pw = Math.round(sel.w * natW / iRect.width);
+  const ph = Math.round(sel.h * natH / iRect.height);
   document.getElementById('cropDims').textContent = `${pw} × ${ph} пикс.`;
 }
 
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function clamp(v)        { return Math.max(0, Math.min(1, v)); }
+function clampV(v, a, b) { return Math.max(a, Math.min(b, v)); }

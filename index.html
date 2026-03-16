@@ -3,55 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CalCraft — Конструктор Календарей</title>
-  <meta name="description" content="Создайте красивый кастомный календарь с вашими мероприятиями и скачайте в PDF или PNG" />
-
+  <title>CalCraft — Годовой Календарь</title>
+  <meta name="description" content="Создайте годовой календарь с фото и скачайте в PDF или PNG" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
-
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <!-- ───────────────────────── SIDEBAR ───────────────────────── -->
-  <aside class="sidebar" id="sidebar">
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar">
 
     <div class="sidebar-header">
       <div class="logo">
         <span class="logo-mark">◈</span>
         <span class="logo-text">CalCraft</span>
       </div>
-      <p class="logo-sub">Конструктор календарей</p>
+      <p class="logo-sub">Годовой календарь</p>
     </div>
 
     <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="content">Содержание</button>
+      <button class="tab-btn active" data-tab="content">Основное</button>
       <button class="tab-btn" data-tab="design">Дизайн</button>
       <button class="tab-btn" data-tab="image">Обложка</button>
+      <button class="tab-btn" data-tab="events">События</button>
     </nav>
 
     <div class="sidebar-body">
 
-      <!-- ── TAB: CONTENT ── -->
+      <!-- TAB: CONTENT -->
       <div class="tab-pane active" id="tab-content">
 
         <div class="field-group">
-          <label class="field-label">Период</label>
-          <input type="month" id="monthPicker" class="field-input" />
+          <label class="field-label">Год</label>
+          <div class="year-picker">
+            <button class="year-btn" id="yearPrev">‹</button>
+            <span class="year-display" id="yearDisplay">2025</span>
+            <button class="year-btn" id="yearNext">›</button>
+          </div>
         </div>
 
         <div class="field-group">
           <label class="field-label">Заголовок</label>
-          <input type="text" id="calTitle" class="field-input" placeholder="Авто" />
+          <input type="text" id="calTitle" class="field-input" placeholder="Например: Команда дизайна" />
         </div>
 
         <div class="field-group">
-          <label class="field-label">Подзаголовок</label>
-          <input type="text" id="calSubtitle" class="field-input" placeholder="Например: Команда дизайна" />
+          <label class="field-label">Подпись</label>
+          <input type="text" id="calSubtitle" class="field-input" placeholder="Дополнительный текст" />
         </div>
 
         <div class="divider"></div>
@@ -69,39 +71,25 @@
           </div>
         </div>
 
-        <div class="divider"></div>
-
         <div class="field-group">
-          <label class="field-label">Мероприятия</label>
-          <div id="eventList" class="event-list"></div>
-          <div class="event-add-row">
-            <input type="text" id="newEventName" class="field-input flex-1" placeholder="Название…" />
-            <input type="date" id="newEventDate" class="field-input w-date" />
-            <input type="color" id="newEventColor" class="color-dot-input" value="#3B5BDB" title="Цвет" />
+          <label class="field-label">Расположение месяцев</label>
+          <div class="layout-grid" id="layoutGrid">
+            <button class="layout-btn active" data-layout="3x4">3×4</button>
+            <button class="layout-btn" data-layout="4x3">4×3</button>
+            <button class="layout-btn" data-layout="2x6">2×6</button>
           </div>
-          <button class="btn-add" id="addEventBtn">+ Добавить</button>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Праздники</label>
-          <div id="holidayList" class="event-list"></div>
-          <div class="event-add-row">
-            <input type="text" id="newHolidayName" class="field-input flex-1" placeholder="Праздник…" />
-            <input type="date" id="newHolidayDate" class="field-input w-date" />
-          </div>
-          <button class="btn-add" id="addHolidayBtn">+ Добавить</button>
         </div>
 
       </div>
 
-      <!-- ── TAB: DESIGN ── -->
+      <!-- TAB: DESIGN -->
       <div class="tab-pane" id="tab-design">
 
         <div class="field-group">
           <label class="field-label">Тема</label>
           <div class="theme-grid" id="themeGrid">
             <button class="theme-card active" data-theme="paper">
-              <span class="theme-preview" style="background:#F7F3EE;border:1px solid #E5DDD3"></span>
+              <span class="theme-preview" style="background:#FFFFFF;border:1px solid #E8E4DF"></span>
               <span>Бумага</span>
             </button>
             <button class="theme-card" data-theme="noir">
@@ -128,47 +116,47 @@
         </div>
 
         <div class="field-group">
-          <label class="field-label">Акцентный цвет</label>
-          <div class="accent-grid" id="accentGrid">
-            <button class="accent-btn active" data-color="#2B2D42" style="background:#2B2D42" title="Антрацит"></button>
-            <button class="accent-btn" data-color="#C0392B" style="background:#C0392B" title="Кармин"></button>
-            <button class="accent-btn" data-color="#3B5BDB" style="background:#3B5BDB" title="Индиго"></button>
-            <button class="accent-btn" data-color="#2D6A4F" style="background:#2D6A4F" title="Изумруд"></button>
-            <button class="accent-btn" data-color="#7B2D8B" style="background:#7B2D8B" title="Пурпур"></button>
-            <button class="accent-btn" data-color="#B5560F" style="background:#B5560F" title="Терракот"></button>
-            <input type="color" id="customAccent" class="accent-btn accent-custom" value="#2B2D42" title="Свой цвет" />
+          <label class="field-label">Акцент</label>
+          <div class="accent-grid">
+            <button class="accent-btn active" data-color="#2B2D42" style="background:#2B2D42"></button>
+            <button class="accent-btn" data-color="#C0392B" style="background:#C0392B"></button>
+            <button class="accent-btn" data-color="#3B5BDB" style="background:#3B5BDB"></button>
+            <button class="accent-btn" data-color="#2D6A4F" style="background:#2D6A4F"></button>
+            <button class="accent-btn" data-color="#7B2D8B" style="background:#7B2D8B"></button>
+            <button class="accent-btn" data-color="#B5560F" style="background:#B5560F"></button>
+            <input type="color" id="customAccent" class="accent-btn accent-custom" value="#2B2D42" />
           </div>
         </div>
 
         <div class="field-group">
           <label class="field-label">Размер экспорта</label>
-          <div class="size-grid" id="sizeGrid">
-            <button class="size-btn active" data-size="a4p">A4 портрет</button>
-            <button class="size-btn" data-size="a4l">A4 альбом</button>
-            <button class="size-btn" data-size="a3p">A3 портрет</button>
+          <div class="size-grid">
+            <button class="size-btn" data-size="a2">A2</button>
+            <button class="size-btn active" data-size="a3">A3</button>
+            <button class="size-btn" data-size="a4">A4</button>
             <button class="size-btn" data-size="square">Квадрат</button>
           </div>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Показывать номера недель</label>
+          <label class="field-label">Показывать выходные цветом</label>
           <label class="toggle-switch">
-            <input type="checkbox" id="showWeekNumbers" />
+            <input type="checkbox" id="showWeekendColor" checked />
             <span class="toggle-track"></span>
           </label>
         </div>
 
         <div class="field-group">
-          <label class="field-label">Показывать легенду</label>
+          <label class="field-label">Показывать номера недель</label>
           <label class="toggle-switch">
-            <input type="checkbox" id="showLegend" checked />
+            <input type="checkbox" id="showWeekNums" />
             <span class="toggle-track"></span>
           </label>
         </div>
 
       </div>
 
-      <!-- ── TAB: IMAGE ── -->
+      <!-- TAB: IMAGE -->
       <div class="tab-pane" id="tab-image">
 
         <div class="upload-zone" id="uploadZone">
@@ -176,8 +164,8 @@
           <img id="uploadThumb" src="" alt="" />
           <div class="upload-placeholder" id="uploadPlaceholder">
             <span class="upload-icon">⬆</span>
-            <p>Нажмите или перетащите изображение</p>
-            <span class="upload-hint">PNG, JPG, WEBP до 10MB</span>
+            <p>Нажмите или перетащите фото</p>
+            <span class="upload-hint">PNG, JPG, WEBP</span>
           </div>
         </div>
 
@@ -186,24 +174,42 @@
           <button class="btn-ghost" id="removeImgBtn">Удалить</button>
         </div>
 
-        <div class="field-group" id="imgHeightGroup" style="display:none">
-          <label class="field-label">Высота обложки <span id="imgHeightVal">220px</span></label>
-          <input type="range" id="imgHeightRange" min="100" max="500" value="220" class="range-input" />
+        <div id="imgHeightGroup" style="display:none">
+          <div class="field-group">
+            <label class="field-label">Высота обложки <span id="imgHeightVal">38%</span></label>
+            <input type="range" id="imgHeightRange" min="15" max="60" value="38" class="range-input" />
+          </div>
         </div>
 
-        <div class="field-group" id="imgFitGroup" style="display:none">
-          <label class="field-label">Заливка</label>
-          <div class="fit-grid">
-            <button class="fit-btn active" data-fit="cover">По ширине</button>
-            <button class="fit-btn" data-fit="contain">Целиком</button>
+      </div>
+
+      <!-- TAB: EVENTS -->
+      <div class="tab-pane" id="tab-events">
+
+        <div class="field-group">
+          <label class="field-label">Праздники и события</label>
+          <div id="eventList" class="event-list"></div>
+          <div class="event-add-form">
+            <input type="text" id="newEventName" class="field-input" placeholder="Название…" />
+            <div class="event-add-row">
+              <input type="date" id="newEventDate" class="field-input flex-1" />
+              <input type="color" id="newEventColor" class="color-dot-input" value="#C0392B" />
+            </div>
+            <div class="event-repeat-row">
+              <label class="field-label" style="margin:0;font-size:0.68rem">Повторять каждый год</label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="newEventRepeat" checked />
+                <span class="toggle-track"></span>
+              </label>
+            </div>
           </div>
+          <button class="btn-add" id="addEventBtn">+ Добавить</button>
         </div>
 
       </div>
 
     </div><!-- /sidebar-body -->
 
-    <!-- Export -->
     <div class="sidebar-footer">
       <button class="btn-export" id="exportPng">
         <span class="btn-icon">↓</span> PNG
@@ -215,45 +221,40 @@
 
   </aside>
 
-  <!-- ───────────────────────── PREVIEW ───────────────────────── -->
+  <!-- ══════════ PREVIEW ══════════ -->
   <main class="preview-area">
     <div class="preview-toolbar">
       <span class="preview-label">Предпросмотр</span>
-      <span class="preview-size-info" id="previewSizeInfo">A4 портрет</span>
+      <span class="preview-hint">Финальный вид может незначительно отличаться от экспорта</span>
     </div>
 
     <div class="preview-stage" id="previewStage">
-      <div class="calendar-sheet" id="calendarSheet">
+      <!-- The calendar sheet rendered by JS -->
+      <div class="cal-sheet" id="calSheet">
 
-        <!-- Image -->
-        <div class="sheet-image" id="sheetImage" style="display:none">
-          <img id="sheetImg" src="" alt="" />
+        <!-- Cover image -->
+        <div class="sheet-cover" id="sheetCover" style="display:none">
+          <img id="coverImg" src="" alt="" />
         </div>
 
-        <!-- Calendar body -->
-        <div class="sheet-body" id="sheetBody">
-          <header class="sheet-header">
-            <div class="sheet-header-left">
-              <h1 class="sheet-title" id="sheetTitle">Январь</h1>
-              <p class="sheet-subtitle" id="sheetSubtitle"></p>
-            </div>
+        <!-- Year header -->
+        <div class="sheet-header" id="sheetHeader">
+          <div class="sheet-header-left">
             <div class="sheet-year" id="sheetYear">2025</div>
-          </header>
-
-          <div class="cal-grid-wrap">
-            <div class="cal-grid" id="calGrid"></div>
+            <div class="sheet-title" id="sheetTitle"></div>
+            <div class="sheet-subtitle" id="sheetSubtitle"></div>
           </div>
-
-          <footer class="sheet-footer" id="sheetFooter">
-            <div class="legend" id="calLegend"></div>
-          </footer>
+          <div class="sheet-header-right" id="sheetHeaderRight"></div>
         </div>
+
+        <!-- 12 months grid -->
+        <div class="months-grid" id="monthsGrid"></div>
 
       </div>
     </div>
   </main>
 
-  <!-- ───────────────────────── CROP MODAL ───────────────────────── -->
+  <!-- ══════════ CROP MODAL ══════════ -->
   <div class="modal-backdrop" id="cropBackdrop">
     <div class="modal-box">
       <div class="modal-head">
@@ -261,24 +262,21 @@
         <button class="modal-close" id="cropClose">✕</button>
       </div>
       <p class="modal-hint">Нарисуйте прямоугольник на изображении</p>
-
       <div class="ratio-row">
         <span class="ratio-label">Соотношение:</span>
         <div class="ratio-btns">
           <button class="ratio-btn active" data-ratio="0">Свободно</button>
-          <button class="ratio-btn" data-ratio="1.414">A4</button>
+          <button class="ratio-btn" data-ratio="2.5">2.5:1</button>
+          <button class="ratio-btn" data-ratio="3">3:1</button>
           <button class="ratio-btn" data-ratio="1.777">16:9</button>
-          <button class="ratio-btn" data-ratio="1.333">4:3</button>
           <button class="ratio-btn" data-ratio="1">1:1</button>
         </div>
       </div>
-
       <div class="crop-canvas-wrap" id="cropWrap">
         <img id="cropSrc" src="" alt="" />
         <div class="crop-rect" id="cropRect"></div>
       </div>
       <p class="crop-dims" id="cropDims"></p>
-
       <div class="modal-actions">
         <button class="btn-primary" id="applyCrop">Применить</button>
         <button class="btn-ghost" id="cancelCrop">Отмена</button>
