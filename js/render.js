@@ -128,7 +128,7 @@ function makeMonth(monthIdx, evMap, today) {
     const evs     = evMap[key] || [];
     const isHol   = evs.some(e => e.type === 'holiday');
 
-    if (!isWE && !isHol) workDays++;
+    if (!isWE) workDays++;
 
     const classes = ['mini-cell'];
     if (isWE)    classes.push('is-weekend');
