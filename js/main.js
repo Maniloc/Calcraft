@@ -460,15 +460,17 @@ export function renderHolidaysEditor() {
 
 // ── HELPERS ─────────────────────────────
 
+function onDeleteEvent(id) {
+  const ev = state.events.find(e => e.id === id);
+  if (ev?.system) return;
+  state.events = state.events.filter(e => e.id !== id);
+  rerender();
+}
+
 function rerender() {
   render();
   renderLegend();
-  renderEventList(id => {
-    const ev = state.events.find(e => e.id === id);
-    if (ev?.system) return; // системные нельзя удалить через этот список
-    state.events = state.events.filter(e => e.id !== id);
-    rerender();
-  });
+  renderEventList(onDeleteEvent);
 }
 
 function setAccent(color) {

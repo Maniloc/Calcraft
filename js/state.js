@@ -18,6 +18,11 @@ export const SIZES = {
 
 export const SUPPORTED_YEARS = [2024, 2025, 2026, 2027];
 
+// ID namespaces for system events (negative to avoid collision with user events)
+const ID_RF_BASE  = 0;    // RF base holidays:   -(year*1000 + 0..499)
+const ID_RF_SHORT = 500;  // RF short days:       -(year*1000 + 500..599)
+const ID_RT_HOL   = 600;  // RT regional holidays: -(year*1000 + 600..699)
+
 // ─────────────────────────────────────────────────────────────
 // ПРОИЗВОДСТВЕННЫЙ КАЛЕНДАРЬ РФ
 //
@@ -263,7 +268,7 @@ export function buildHolidaysForYear(year) {
   // 4. Предпраздничные дни
   for (const h of (cal.short || [])) {
     events.push({
-      id: -(year * 1000 + 500 + idx++), name: h.name, date: h.date,
+      id: -(year * 1000 + ID_RF_SHORT + idx++), name: h.name, date: h.date,
       color: '#E67E22', repeat: false, type: 'short', system: true,
     });
   }
@@ -341,7 +346,7 @@ export function buildTatarHolidaysForYear(year) {
   const cal = RT_CALENDAR[year];
   if (!cal) return [];
   const events = [];
-  let idx = 600;
+  let idx = ID_RT_HOL;
   (cal.holidays || []).forEach(h => {
     events.push({
       id: -(year * 1000 + idx++), name: h.name, date: h.date,

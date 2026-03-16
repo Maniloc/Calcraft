@@ -46,28 +46,33 @@ export function renderCover() {
     return;
   }
 
-  cover.style.display = 'block';
-  // Высота задаётся в процентах ширины листа (не vh!) чтобы корректно работать при экспорте
-  cover.style.paddingBottom = '0';
-  cover.style.height = state.imgHeightPct + 'vw';
+  cover.style.display   = 'block';
+  cover.style.overflow  = 'hidden';
+  cover.style.position  = 'relative';
+  // Высота = % от ширины самого листа (padding-bottom trick обеспечивает
+  // одинаковое соотношение и в превью и при экспорте)
+  cover.style.height       = '0';
+  cover.style.paddingBottom = state.imgHeightPct + '%';
 
-  // Картинка
   const img = $('coverImg');
   img.src = state.image;
 
+  // Картинка абсолютно позиционирована внутри cover
+  img.style.position = 'absolute';
+  img.style.top      = '0';
+  img.style.left     = '0';
+
   if (state.cropRect) {
-    // Кроп: позиционируем через margin
     const { rx, ry, rw, rh } = state.cropRect;
-    const h = cover.offsetHeight || 200;
+    // Ширина и высота изображения масштабируются относительно cover
     img.style.width          = (100 / rw) + '%';
-    img.style.height         = (h / rh) + 'px';
+    img.style.height         = (100 / rh) + '%';
     img.style.objectFit      = 'none';
     img.style.objectPosition = '';
     img.style.marginLeft     = (-rx / rw * 100) + '%';
-    img.style.marginTop      = (-ry * h / rh) + 'px';
+    img.style.marginTop      = (-ry / rh * 100) + '%';
     img.style.maxWidth       = 'none';
   } else if (state.imgFit === 'fill') {
-    // Растянуть по размеру блока
     img.style.width          = '100%';
     img.style.height         = '100%';
     img.style.objectFit      = 'fill';
@@ -76,7 +81,6 @@ export function renderCover() {
     img.style.marginTop      = '';
     img.style.maxWidth       = '';
   } else {
-    // cover — заполнить сохраняя пропорции (по умолчанию)
     img.style.width          = '100%';
     img.style.height         = '100%';
     img.style.objectFit      = 'cover';
@@ -86,7 +90,6 @@ export function renderCover() {
     img.style.maxWidth       = '';
   }
 
-  // Текст поверх обложки
   renderCoverText();
 }
 
@@ -103,9 +106,12 @@ export function renderCoverText() {
 
   const span = document.createElement('span');
   span.className = 'cover-text-content';
-  span.textContent = state.coverText;
-  span.style.fontSize = state.coverTextSize + 'px';
-  span.style.color    = state.coverTextColor;
+  // textContent не поддерживает \n — используем innerText чтобы сохранить переносы строк
+  span.innerText = state.coverText;
+  span.style.fontSize    = state.coverTextSize + 'px';
+  span.style.color       = state.coverTextColor;
+  span.style.whiteSpace  = 'pre-wrap';
+  span.style.textAlign   = 'center';
 
   overlay.appendChild(span);
   $('sheetCover').appendChild(overlay);
@@ -367,10 +373,13 @@ function makeMonth(monthIdx, evMap, today) {
   if (state.showWorkStats) {
     const hours = workDays * state.hoursPerDay - shortDays;
     const stats = el('div', 'work-stats');
-    stats.innerHTML =
-      `<span class="ws-days">${workDays}\u202fр.д.</span>` +
-      `<span class="ws-sep"> / </span>` +
-      `<span class="ws-hours">${hours}\u202fч</span>`;
+    const daysSpan  = el('span', 'ws-days');
+    daysSpan.textContent  = workDays + ' р.д.';
+    const sepSpan   = el('span', 'ws-sep');
+    sepSpan.textContent   = ' / ';
+    const hoursSpan = el('span', 'ws-hours');
+    hoursSpan.textContent = hours + ' ч';
+    stats.append(daysSpan, sepSpan, hoursSpan);
     wrap.appendChild(stats);
   }
 

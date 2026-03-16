@@ -741,3 +741,11 @@ body {
 .rf-entry--region .rf-badge--holiday {
   background: #e8f8ef; color: #27AE60;
 }
+
+/* ── TEXTAREA ── */
+.field-textarea {
+  resize: vertical;
+  min-height: 64px;
+  line-height: 1.5;
+  font-family: var(--font-ui);
+}

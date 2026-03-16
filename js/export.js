@@ -54,28 +54,40 @@ async function capture() {
   });
 
   // Fix cover image in clone
+  // Uses same padding-bottom % trick as renderCover() — guarantees
+  // identical crop geometry in preview and export
   const cloneCover = clone.querySelector('#sheetCover');
   const cloneImg   = clone.querySelector('#coverImg');
   if (state.image && cloneCover && cloneImg) {
-    const coverPx = Math.round(size.h * state.imgHeightPct / 100);
-    cloneCover.style.height     = coverPx + 'px';
-    cloneCover.style.display    = 'block';
-    cloneCover.style.overflow   = 'hidden';
+    cloneCover.style.display      = 'block';
+    cloneCover.style.overflow     = 'hidden';
+    cloneCover.style.position     = 'relative';
+    cloneCover.style.height       = '0';
+    cloneCover.style.paddingBottom = state.imgHeightPct + '%';
     cloneImg.src = state.image;
+
+    // Position image absolutely inside cover
+    cloneImg.style.position = 'absolute';
+    cloneImg.style.top      = '0';
+    cloneImg.style.left     = '0';
 
     if (state.cropRect) {
       const { rx, ry, rw, rh } = state.cropRect;
       cloneImg.style.width         = (100 / rw) + '%';
-      cloneImg.style.height        = (coverPx / rh) + 'px';
+      cloneImg.style.height        = (100 / rh) + '%';
       cloneImg.style.objectFit     = 'none';
+      cloneImg.style.objectPosition = '';
       cloneImg.style.marginLeft    = (-rx / rw * 100) + '%';
-      cloneImg.style.marginTop     = (-ry * coverPx / rh) + 'px';
+      cloneImg.style.marginTop     = (-ry / rh * 100) + '%';
       cloneImg.style.maxWidth      = 'none';
     } else {
-      cloneImg.style.width         = '100%';
-      cloneImg.style.height        = '100%';
-      cloneImg.style.objectFit     = state.imgFit || 'cover';
+      cloneImg.style.width          = '100%';
+      cloneImg.style.height         = '100%';
+      cloneImg.style.objectFit      = state.imgFit || 'cover';
       cloneImg.style.objectPosition = 'center';
+      cloneImg.style.marginLeft     = '';
+      cloneImg.style.marginTop      = '';
+      cloneImg.style.maxWidth       = '';
     }
   }
 
