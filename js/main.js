@@ -15,14 +15,15 @@ import { saveState, loadState, clearState } from './storage.js';
 
 function boot() {
   const now = new Date().getFullYear();
-  const defaultYear = SUPPORTED_YEARS.includes(now) ? now : SUPPORTED_YEARS[1];
+  const defaultYear = SUPPORTED_YEARS.includes(now) ? now : SUPPORTED_YEARS[SUPPORTED_YEARS.length - 1];
 
   // Восстанавливаем состояние из localStorage
   const restored = loadState(state);
-  if (!restored) state.year = defaultYear;
 
-  // Убеждаемся что год в допустимом диапазоне
-  if (!SUPPORTED_YEARS.includes(state.year)) state.year = defaultYear;
+  // Год из localStorage мог устареть — всегда берём текущий если он поддерживается
+  if (!restored || !SUPPORTED_YEARS.includes(state.year)) {
+    state.year = defaultYear;
+  }
 
   rebuildSystemHolidays();
   initCrop();

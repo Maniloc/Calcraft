@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════
-// export.js — PNG & PDF via dom-to-image-more
+// export.js — PNG & PDF via html2canvas
 // Предпросмотр перед скачиванием.
 // ═══════════════════════════════════════
 
@@ -29,8 +29,8 @@ async function openPreview(fmt) {
 
   modal.dataset.fmt = fmt;
   modal.classList.add('open');
-  spin.style.display  = 'flex';
-  img.style.display   = 'none';
+  spin.style.display = 'flex';
+  img.style.display  = 'none';
 
   try {
     const dataUrl = await renderToDataUrl();
@@ -63,7 +63,7 @@ async function doExport(fmt) {
     else               savePdf(dataUrl);
   } catch (e) {
     console.error('Export error:', e);
-    alert('Ошибка экспорта. Попробуйте ещё раз.\n' + e.message);
+    alert('Ошибка экспорта: ' + e.message);
   } finally {
     btn.classList.remove('loading');
     btn.querySelector('.btn-icon').textContent = '↓';
@@ -76,7 +76,7 @@ async function renderToDataUrl() {
   const sheet = document.getElementById('calSheet');
   const size  = getSizeWithOrientation(state.size, state.orientation);
 
-  // Клонируем в off-screen контейнер нужного размера
+  // Клон для экспорта — живой DOM не трогаем
   const clone = sheet.cloneNode(true);
   clone.id = 'calSheetExport';
   Object.assign(clone.style, {
@@ -91,6 +91,7 @@ async function renderToDataUrl() {
     transform:    'none',
     animation:    'none',
     zIndex:       '0',
+    visibility:   'hidden',
   });
 
   // Обложка
@@ -111,33 +112,68 @@ async function renderToDataUrl() {
       cloneCover.style.backgroundRepeat   = 'no-repeat';
       if (cloneImg) cloneImg.style.display = 'none';
     } else if (cloneImg) {
-      cloneCover.style.backgroundImage = '';
-      cloneImg.style.display       = 'block';
-      cloneImg.style.position      = 'absolute';
-      cloneImg.style.inset         = '0';
-      cloneImg.style.width         = '100%';
-      cloneImg.style.height        = '100%';
-      cloneImg.style.objectFit     = state.imgFit === 'fill' ? 'fill' : 'cover';
-      cloneImg.style.objectPosition = 'center';
+      cloneCover.style.backgroundImage  = '';
+      cloneImg.style.display            = 'block';
+      cloneImg.style.position           = 'absolute';
+      cloneImg.style.inset              = '0';
+      cloneImg.style.width              = '100%';
+      cloneImg.style.height             = '100%';
+      cloneImg.style.objectFit          = state.imgFit === 'fill' ? 'fill' : 'cover';
+      cloneImg.style.objectPosition     = 'center';
       cloneImg.src = state.image;
     }
   }
 
   document.body.appendChild(clone);
+  clone.style.visibility = 'visible';
   await sleep(100);
 
-  // dom-to-image-more: читает CSS vars напрямую, не требует инлайна
+  // Инлайним вычисленные стили (html2canvas не читает CSS-переменные)
+  inlineStyles(sheet, clone);
+
+  await sleep(60);
+
   const bgColor = getComputedStyle(sheet).backgroundColor || '#ffffff';
-  const dataUrl = await domtoimage.toPng(clone, {
-    width:   size.w,
-    height:  clone.scrollHeight,
-    style:   { background: bgColor },
-    quality: 1,
-    scale:   2,
+  const canvas  = await html2canvas(clone, {
+    scale:           2,
+    useCORS:         true,
+    allowTaint:      true,
+    backgroundColor: bgColor,
+    logging:         false,
+    width:           size.w,
+    windowWidth:     size.w,
   });
 
   clone.remove();
-  return dataUrl;
+  return canvas.toDataURL('image/png', 1.0);
+}
+
+// Копирует вычисленные стили из живых элементов в клон
+function inlineStyles(liveRoot, cloneRoot) {
+  const PROPS = [
+    'color', 'backgroundColor', 'backgroundImage', 'backgroundSize',
+    'backgroundPosition', 'backgroundRepeat',
+    'borderColor', 'borderTopColor', 'borderBottomColor',
+    'borderLeftColor', 'borderRightColor',
+    'fontFamily', 'fontSize', 'fontWeight', 'fontStyle',
+  ];
+
+  const liveAll  = [liveRoot,  ...liveRoot.querySelectorAll('*')];
+  const cloneAll = [cloneRoot, ...cloneRoot.querySelectorAll('*')];
+  const len = Math.min(liveAll.length, cloneAll.length);
+
+  for (let i = 0; i < len; i++) {
+    const live  = liveAll[i];
+    const clone = cloneAll[i];
+    if (!(live instanceof HTMLElement) || !(clone instanceof HTMLElement)) continue;
+    const cs = getComputedStyle(live);
+    for (const prop of PROPS) {
+      const val = cs[prop];
+      if (val && !val.includes('color-mix') && !val.includes('var(')) {
+        clone.style[prop] = val;
+      }
+    }
+  }
 }
 
 // ── SAVE ────────────────────────────────
@@ -151,7 +187,7 @@ function savePng(dataUrl) {
 
 function savePdf(dataUrl) {
   const { jsPDF } = window.jspdf;
-  const img  = new Image();
+  const img = new Image();
   img.onload = () => {
     const MM  = 25.4 / 96;
     const wMM = (img.width  / 2) * MM;
