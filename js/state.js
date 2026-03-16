@@ -16,6 +16,14 @@ export const SIZES = {
   square: { w: 1200, h: 1200, label: 'Квадрат' },
 };
 
+// Возвращает размеры с учётом ориентации
+export function getSizeWithOrientation(sizeKey, orientation) {
+  const s = SIZES[sizeKey];
+  if (!s) return null;
+  if (orientation === 'landscape') return { w: Math.max(s.w, s.h), h: Math.min(s.w, s.h), label: s.label };
+  return { w: Math.min(s.w, s.h), h: Math.max(s.w, s.h), label: s.label }; // portrait
+}
+
 export const SUPPORTED_YEARS = [2024, 2025, 2026, 2027];
 
 // ID namespaces for system events (negative to avoid collision with user events)
@@ -369,6 +377,7 @@ export const state = {
   theme:            'paper',
   accent:           '#2B2D42',
   size:             'a3',
+  orientation:      'portrait', // 'portrait' | 'landscape'
   layout:           '3x4',
   showWeekendColor: true,
   showWeekNums:     false,

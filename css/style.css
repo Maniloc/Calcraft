@@ -307,7 +307,7 @@ body {
 
 .preview-stage {
   flex: 1; overflow: auto; display: flex;
-  align-items: flex-start; justify-content: center; padding: 24px;
+  align-items: flex-start; justify-content: center; padding: 24px; flex-direction: column;
   background-image: radial-gradient(circle, var(--ink-300) 1px, transparent 1px);
   background-size: 22px 22px; background-color: var(--app-bg);
 }
@@ -317,14 +317,28 @@ body {
 /* ══════════════════════════
    CALENDAR SHEET
 ══════════════════════════ */
+.preview-stage {
+  align-items: center;
+  justify-content: center;
+}
+
+/* Обёртка для масштабирования — сохраняет aspect-ratio листа */
+.cal-sheet-wrap {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 .cal-sheet {
   background: var(--cal-bg);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
-  width: 100%;
+  /* aspect-ratio и width устанавливаются через JS */
+  flex-shrink: 0;
   animation: fadeUp 0.35s cubic-bezier(0.22,1,0.36,1) both;
-  transition: background var(--transition);
+  transition: background var(--transition), width var(--transition);
 }
 
 @keyframes fadeUp {
@@ -749,3 +763,30 @@ body {
   line-height: 1.5;
   font-family: var(--font-ui);
 }
+
+/* ── ORIENTATION BUTTONS ── */
+.orient-grid { display: flex; gap: 8px; }
+
+.orient-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  padding: 10px 8px;
+  border: 1.5px solid var(--sidebar-border);
+  border-radius: var(--r-md); background: white;
+  font-family: var(--font-ui); font-size: 0.75rem; font-weight: 500;
+  color: var(--ink-500); cursor: pointer; transition: all var(--transition);
+}
+.orient-btn.active {
+  border-color: var(--accent); color: var(--accent);
+  background: var(--accent-light);
+}
+.orient-btn:hover:not(.active) { border-color: var(--ink-300); }
+
+.orient-icon {
+  display: block;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.7;
+}
+.orient-icon--portrait  { width: 14px; height: 20px; }
+.orient-icon--landscape { width: 20px; height: 14px; }

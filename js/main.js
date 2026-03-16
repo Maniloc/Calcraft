@@ -2,8 +2,8 @@
 // main.js — Entry point
 // ═══════════════════════════════════════
 
-import { state, buildHolidaysForYear, buildTatarHolidaysForYear, RF_CALENDAR, SUPPORTED_YEARS } from './state.js';
-import { render, renderEventList, renderCoverText, renderLegend, syncImageUI, applyTheme } from './render.js';
+import { state, buildHolidaysForYear, buildTatarHolidaysForYear, RF_CALENDAR, SUPPORTED_YEARS, getSizeWithOrientation } from './state.js';
+import { render, renderEventList, renderCoverText, renderLegend, renderSheetSize, syncImageUI, applyTheme } from './render.js';
 import { initCrop } from './crop.js';
 import { initExport } from './export.js';
 
@@ -18,8 +18,14 @@ function boot() {
   initExport();
   bindAll();
   syncYearUI();
-  renderHolidaysEditor();
   rerender();
+
+  // Пересчитываем размер листа при изменении окна
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => renderSheetSize(), 80);
+  });
 }
 
 boot();
@@ -161,6 +167,17 @@ function bindDesign() {
       document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.size = btn.dataset.size;
+      rerender();
+    });
+  });
+
+  // Orientation
+  document.querySelectorAll('.orient-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.orient-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.orientation = btn.dataset.orient;
+      rerender();
     });
   });
 

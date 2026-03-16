@@ -2,7 +2,7 @@
 // export.js — PNG & PDF via html2canvas
 // ═══════════════════════════════════════
 
-import { state, SIZES } from './state.js';
+import { state, SIZES, getSizeWithOrientation } from './state.js';
 
 export function initExport() {
   document.getElementById('exportPng').addEventListener('click', () => doExport('png'));
@@ -32,7 +32,7 @@ async function doExport(fmt) {
 
 async function capture() {
   const sheet = document.getElementById('calSheet');
-  const size  = SIZES[state.size];
+  const size  = getSizeWithOrientation(state.size, state.orientation);
 
   // Clone the sheet — live DOM stays untouched
   const clone = sheet.cloneNode(true);

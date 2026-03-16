@@ -2,15 +2,57 @@
 // render.js
 // ═══════════════════════════════════════
 
-import { state, MONTHS_RU, DOW_SHORT } from './state.js';
+import { state, MONTHS_RU, DOW_SHORT, getSizeWithOrientation } from './state.js';
 
 // ── PUBLIC ──────────────────────────────
 
 export function render() {
   applyTheme();
+  renderSheetSize();
   renderCover();
   renderHeader();
   renderMonths();
+}
+
+// Устанавливает размер и соотношение сторон листа в превью
+export function renderSheetSize() {
+  const sheet = $('calSheet');
+  const stage = $('previewStage');
+  if (!sheet || !stage) return;
+
+  const size = getSizeWithOrientation(state.size, state.orientation);
+  if (!size) return;
+
+  const ratio = size.w / size.h; // например 0.707 для A4 портрет
+
+  // Вписываем лист в доступную область превью
+  const stageW = stage.clientWidth  - 48; // padding 24px с каждой стороны
+  const stageH = stage.clientHeight - 48;
+
+  let sheetW, sheetH;
+  if (stageW / stageH > ratio) {
+    // Ограничение по высоте
+    sheetH = Math.min(stageH, 1200);
+    sheetW = Math.round(sheetH * ratio);
+  } else {
+    // Ограничение по ширине
+    sheetW = Math.min(stageW, 1200);
+    sheetH = Math.round(sheetW / ratio);
+  }
+
+  sheet.style.width      = sheetW + 'px';
+  sheet.style.height     = 'auto'; // высота определяется контентом — НЕ фиксируем
+  sheet.style.aspectRatio = '';    // убираем aspect-ratio, пусть контент определяет высоту
+  sheet.style.maxWidth   = sheetW + 'px';
+  sheet.style.minWidth   = sheetW + 'px';
+
+  // Обновляем подпись в тулбаре
+  const info = $('previewSizeInfo');
+  if (info) {
+    const label = size.label;
+    const ori   = state.orientation === 'landscape' ? 'альбом' : 'портрет';
+    info.textContent = `${label} · ${ori}`;
+  }
 }
 
 export function applyTheme() {
