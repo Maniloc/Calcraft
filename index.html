@@ -154,6 +154,25 @@
           </label>
         </div>
 
+        <div class="divider"></div>
+
+        <div class="field-group">
+          <label class="field-label">Рабочий календарь</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showWorkStats" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="field-group" id="hoursGroup" style="display:none">
+          <label class="field-label">Часов в рабочем дне</label>
+          <div class="hours-picker">
+            <button class="year-btn" id="hoursMinus">−</button>
+            <span class="year-display" id="hoursDisplay" style="font-size:1.2rem">8</span>
+            <button class="year-btn" id="hoursPlus">+</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- TAB: IMAGE -->

@@ -484,3 +484,34 @@ body {
   .sidebar-body { max-height: 55vh; }
   .preview-stage { padding: 12px; }
 }
+
+/* ── WORK STATS ── */
+.work-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding: 3px 6px;
+  background: color-mix(in srgb, var(--cal-weekend) 8%, var(--cal-bg));
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--cal-weekend) 15%, transparent);
+}
+.ws-days {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--cal-weekend);
+  letter-spacing: 0.02em;
+}
+.ws-sep {
+  font-size: 0.6rem;
+  color: var(--cal-muted);
+}
+.ws-hours {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--cal-muted);
+}
+
+/* ── HOURS PICKER (reuse year-picker style) ── */
+.hours-picker { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

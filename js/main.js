@@ -14,8 +14,6 @@ import { initExport } from './export.js';
   rerender();
 })();
 
-// ── BIND ALL ────────────────────────────
-
 function bindAll() {
   bindTabs();
   bindContent();
@@ -40,7 +38,6 @@ function bindTabs() {
 // ── CONTENT TAB ─────────────────────────
 
 function bindContent() {
-  // Year picker
   document.getElementById('yearPrev').addEventListener('click', () => {
     state.year--;
     document.getElementById('yearDisplay').textContent = state.year;
@@ -52,17 +49,13 @@ function bindContent() {
     rerender();
   });
 
-  // Title & subtitle
   document.getElementById('calTitle').addEventListener('input', e => {
-    state.title = e.target.value;
-    rerender();
+    state.title = e.target.value; rerender();
   });
   document.getElementById('calSubtitle').addEventListener('input', e => {
-    state.subtitle = e.target.value;
-    rerender();
+    state.subtitle = e.target.value; rerender();
   });
 
-  // Weekend toggles
   document.querySelectorAll('.day-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const d = parseInt(btn.dataset.day, 10);
@@ -73,7 +66,6 @@ function bindContent() {
     });
   });
 
-  // Layout buttons
   document.querySelectorAll('.layout-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
@@ -87,7 +79,6 @@ function bindContent() {
 // ── DESIGN TAB ──────────────────────────
 
 function bindDesign() {
-  // Themes
   document.querySelectorAll('.theme-card').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
@@ -97,7 +88,6 @@ function bindDesign() {
     });
   });
 
-  // Accent presets
   document.querySelectorAll('.accent-btn:not(.accent-custom)').forEach(btn => {
     btn.addEventListener('click', () => {
       setAccent(btn.dataset.color);
@@ -106,7 +96,6 @@ function bindDesign() {
     });
   });
 
-  // Custom accent
   const picker = document.getElementById('customAccent');
   picker.addEventListener('input', e => {
     setAccent(e.target.value);
@@ -114,7 +103,6 @@ function bindDesign() {
     picker.classList.add('active');
   });
 
-  // Size buttons
   document.querySelectorAll('.size-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
@@ -123,13 +111,31 @@ function bindDesign() {
     });
   });
 
-  // Toggles
   document.getElementById('showWeekendColor').addEventListener('change', e => {
-    state.showWeekendColor = e.target.checked;
-    rerender();
+    state.showWeekendColor = e.target.checked; rerender();
   });
   document.getElementById('showWeekNums').addEventListener('change', e => {
-    state.showWeekNums = e.target.checked;
+    state.showWeekNums = e.target.checked; rerender();
+  });
+
+  // Work stats toggle
+  document.getElementById('showWorkStats').addEventListener('change', e => {
+    state.showWorkStats = e.target.checked;
+    document.getElementById('hoursGroup').style.display = state.showWorkStats ? 'block' : 'none';
+    rerender();
+  });
+
+  // Hours per day picker
+  document.getElementById('hoursMinus').addEventListener('click', () => {
+    if (state.hoursPerDay <= 1) return;
+    state.hoursPerDay--;
+    document.getElementById('hoursDisplay').textContent = state.hoursPerDay;
+    rerender();
+  });
+  document.getElementById('hoursPlus').addEventListener('click', () => {
+    if (state.hoursPerDay >= 24) return;
+    state.hoursPerDay++;
+    document.getElementById('hoursDisplay').textContent = state.hoursPerDay;
     rerender();
   });
 }

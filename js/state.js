@@ -17,19 +17,21 @@ export const SIZES = {
 };
 
 export const state = {
-  year:            new Date().getFullYear(),
-  title:           '',
-  subtitle:        '',
-  theme:           'paper',
-  accent:          '#2B2D42',
-  size:            'a3',
-  layout:          '3x4',      // '3x4' | '4x3' | '2x6'
+  year:             new Date().getFullYear(),
+  title:            '',
+  subtitle:         '',
+  theme:            'paper',
+  accent:           '#2B2D42',
+  size:             'a3',
+  layout:           '3x4',
   showWeekendColor: true,
-  showWeekNums:    false,
-  weekends:        new Set([0, 6]),  // JS day numbers (0=Sun)
-  image:           null,             // base64
-  cropRect:        null,             // { rx,ry,rw,rh }
-  imgHeightPct:    38,               // % of sheet height
+  showWeekNums:     false,
+  showWorkStats:    false,   // показывать р.д. / ч под месяцем
+  hoursPerDay:      8,       // рабочих часов в день
+  weekends:         new Set([0, 6]),
+  image:            null,
+  cropRect:         null,
+  imgHeightPct:     38,
   /** @type {{ id:number, name:string, date:string, color:string, repeat:boolean }[]} */
-  events:          [],
+  events:           [],
 };
