@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image-more/3.1.10/dom-to-image-more.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -318,6 +318,7 @@
       <button class="btn-export btn-export--pdf" id="exportPdf">
         <span class="btn-icon">↓</span> PDF
       </button>
+      <button class="btn-reset" id="resetBtn" title="Сбросить все настройки">↺</button>
     </div>
 
   </aside>
@@ -359,6 +360,27 @@
       </div>
     </div>
   </main>
+
+  <!-- ══════════ EXPORT PREVIEW MODAL ══════════ -->
+  <div class="modal-backdrop" id="previewModal">
+    <div class="modal-box modal-box--preview">
+      <div class="modal-head">
+        <h2 class="modal-title">Предпросмотр</h2>
+        <button class="modal-close" id="previewCancel">✕</button>
+      </div>
+      <div class="preview-modal-body">
+        <div class="preview-spinner" id="previewSpinner">
+          <span class="spinner-icon">↻</span>
+          <span>Рендеринг…</span>
+        </div>
+        <img id="previewImg" src="" alt="Предпросмотр" style="display:none;max-width:100%;border-radius:4px" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="previewConfirm">⬇ Скачать</button>
+        <button class="btn-ghost" id="previewCancel">Отмена</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════ CROP MODAL ══════════ -->
   <div class="modal-backdrop" id="cropBackdrop">

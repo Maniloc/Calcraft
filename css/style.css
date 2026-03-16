@@ -787,3 +787,51 @@ body {
 }
 .orient-icon--portrait  { width: 14px; height: 20px; }
 .orient-icon--landscape { width: 20px; height: 14px; }
+
+/* ── PREVIEW MODAL ── */
+.modal-box--preview {
+  max-width: 700px;
+  width: 90vw;
+}
+.preview-modal-body {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+  overflow: auto;
+  max-height: 65vh;
+}
+.preview-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-500);
+  font-size: 0.85rem;
+}
+.spinner-icon {
+  font-size: 1.8rem;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESET BUTTON ── */
+.btn-reset {
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--sidebar-border);
+  border-radius: var(--r-md);
+  background: white;
+  color: var(--ink-400, #b0a8a0);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.btn-reset:hover {
+  border-color: #C0392B;
+  color: #C0392B;
+  background: #fdf2f2;
+}

@@ -6,12 +6,29 @@ import { state, MONTHS_RU, DOW_SHORT, getSizeWithOrientation } from './state.js'
 
 // ── PUBLIC ──────────────────────────────
 
+// Полный ре-рендер (смена года, темы, праздников)
 export function render() {
   applyTheme();
   renderSheetSize();
   renderCover();
   renderHeader();
   renderMonths();
+}
+
+// Только обложка + текст (смена фото, кропа, высоты)
+export function renderCoverOnly() {
+  renderCover();
+}
+
+// Только размер листа в превью (смена формата/ориентации)
+export function renderSizeOnly() {
+  applyTheme();
+  renderSheetSize();
+}
+
+// Только заголовок (title/subtitle/year)
+export function renderHeaderOnly() {
+  renderHeader();
 }
 
 // Устанавливает размер и соотношение сторон листа в превью
@@ -185,7 +202,7 @@ export function renderHeader() {
 
 export function renderMonths() {
   const grid = $('monthsGrid');
-  grid.innerHTML = '';
+  grid.replaceChildren();
   grid.className = 'months-grid layout-' + state.layout;
 
   const evMap = buildEventMap();
@@ -270,7 +287,7 @@ export function renderLegend() {
 
   footer.style.display = '';
   const legend = document.getElementById('calLegend');
-  legend.innerHTML = '';
+  legend.replaceChildren();
 
   items.forEach(item => {
     const row = el('div', 'legend-item');
@@ -304,7 +321,7 @@ export function renderLegend() {
 
 export function renderEventList(onDelete) {
   const list = $('eventList');
-  list.innerHTML = '';
+  list.replaceChildren();
   // Показываем только пользовательские события (не системные праздники РФ)
   const userEvents = state.events.filter(e => !e.system);
   if (userEvents.length === 0) {

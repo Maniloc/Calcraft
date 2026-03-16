@@ -2,22 +2,34 @@
 // main.js — Entry point
 // ═══════════════════════════════════════
 
-import { state, buildHolidaysForYear, buildTatarHolidaysForYear, RF_CALENDAR, SUPPORTED_YEARS } from './state.js';
-import { render, renderEventList, renderCoverText, renderLegend, renderSheetSize, syncImageUI, applyTheme } from './render.js';
+import { state, buildHolidaysForYear, buildTatarHolidaysForYear,
+         RF_CALENDAR, SUPPORTED_YEARS } from './state.js';
+import { render, renderCoverOnly, renderSizeOnly, renderHeaderOnly as renderHeaderOnlyFn,
+         renderEventList, renderCoverText, renderLegend,
+         renderSheetSize, syncImageUI, applyTheme } from './render.js';
 import { initCrop } from './crop.js';
 import { initExport } from './export.js';
+import { saveState, loadState, clearState } from './storage.js';
 
 // ── BOOT ────────────────────────────────
 
 function boot() {
   const now = new Date().getFullYear();
-  state.year = SUPPORTED_YEARS.includes(now) ? now : SUPPORTED_YEARS[1]; // 2025 as fallback
+  const defaultYear = SUPPORTED_YEARS.includes(now) ? now : SUPPORTED_YEARS[1];
+
+  // Восстанавливаем состояние из localStorage
+  const restored = loadState(state);
+  if (!restored) state.year = defaultYear;
+
+  // Убеждаемся что год в допустимом диапазоне
+  if (!SUPPORTED_YEARS.includes(state.year)) state.year = defaultYear;
 
   rebuildSystemHolidays();
   initCrop();
   initExport();
   bindAll();
   syncYearUI();
+  syncCheckboxes();
   rerender();
 
   // Пересчитываем размер листа при изменении окна
@@ -26,34 +38,107 @@ function boot() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => renderSheetSize(), 80);
   });
+
+  // Автосохранение: каждые 3 секунды если было изменение
+  let dirty = false;
+  const origRerender = rerender;
+  setInterval(() => { if (dirty) { saveState(state); dirty = false; } }, 3000);
+  // Помечаем dirty после каждого rerender
+  window._markDirty = () => { dirty = true; };
 }
 
 boot();
 
+// ── SYNC UI FROM STATE (для восстановления из localStorage) ──
+
+function syncCheckboxes() {
+  setChecked('showWeekendColor', state.showWeekendColor);
+  setChecked('showWeekNums',     state.showWeekNums);
+  setChecked('showHeader',       state.showHeader !== false);
+  setChecked('showWorkStats',    state.showWorkStats);
+  setChecked('showTatarstan',    state.tatarstan);
+
+  document.getElementById('hoursGroup').style.display =
+    state.showWorkStats ? 'block' : 'none';
+  document.getElementById('hoursDisplay').textContent = state.hoursPerDay;
+
+  // Weekends
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    const d = parseInt(btn.dataset.day, 10);
+    btn.classList.toggle('active', state.weekends.has(d));
+  });
+
+  // Layout
+  document.querySelectorAll('.layout-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.layout === state.layout));
+
+  // Size
+  document.querySelectorAll('.size-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.size === state.size));
+
+  // Orientation
+  document.querySelectorAll('.orient-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.orient === state.orientation));
+
+  // Theme
+  document.querySelectorAll('.theme-card').forEach(c =>
+    c.classList.toggle('active', c.dataset.theme === state.theme));
+
+  // Accent
+  document.querySelectorAll('.accent-btn:not(.accent-custom)').forEach(b =>
+    b.classList.toggle('active', b.dataset.color === state.accent));
+  document.getElementById('customAccent').value = state.accent;
+
+  // Cover text
+  document.getElementById('coverText').value      = state.coverText || '';
+  document.getElementById('calTitle').value       = state.title     || '';
+  document.getElementById('calSubtitle').value    = state.subtitle  || '';
+  document.getElementById('imgHeightRange').value = state.imgHeightPct;
+  document.getElementById('imgHeightVal').textContent = state.imgHeightPct + '%';
+  document.getElementById('coverTextSize').value  = state.coverTextSize;
+  document.getElementById('coverTextSizeVal').textContent = state.coverTextSize + 'px';
+
+  // Fit
+  document.querySelectorAll('.fit-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.fit === state.imgFit));
+
+  // Position
+  document.querySelectorAll('.pos-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.pos === state.coverTextPosition));
+
+  // Image UI
+  if (state.image) syncImageUI();
+}
+
+function setChecked(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.checked = !!val;
+}
+
 // ── YEAR UI ─────────────────────────────
 
 function syncYearUI() {
-  $('yearDisplay').textContent = state.year;
+  document.getElementById('yearDisplay').textContent = state.year;
+
   const cal     = RF_CALENDAR[state.year];
   const warning = cal?.warning;
-  let warnEl    = $('yearWarning');
+  let warnEl    = document.getElementById('yearWarning');
 
   if (warning) {
     if (!warnEl) {
       warnEl = document.createElement('p');
       warnEl.id = 'yearWarning';
       warnEl.className = 'year-warning';
-      $('yearDisplay').closest('.field-group').appendChild(warnEl);
+      document.getElementById('yearDisplay').closest('.field-group').appendChild(warnEl);
     }
     warnEl.textContent = '⚠ ' + warning;
   } else if (warnEl) {
     warnEl.remove();
   }
 
-  // Disable nav buttons at boundaries
   const idx = SUPPORTED_YEARS.indexOf(state.year);
-  $('yearPrev').disabled = idx <= 0;
-  $('yearNext').disabled = idx >= SUPPORTED_YEARS.length - 1;
+  document.getElementById('yearPrev').disabled = idx <= 0;
+  document.getElementById('yearNext').disabled = idx >= SUPPORTED_YEARS.length - 1;
 }
 
 // ── REBUILD SYSTEM HOLIDAYS ──────────────
@@ -73,6 +158,7 @@ function bindAll() {
   bindDesign();
   bindImage();
   bindEvents();
+  bindReset();
 }
 
 // ── TABS ────────────────────────────────
@@ -91,7 +177,7 @@ function bindTabs() {
 // ── CONTENT TAB ─────────────────────────
 
 function bindContent() {
-  $('yearPrev').addEventListener('click', () => {
+  document.getElementById('yearPrev').addEventListener('click', () => {
     const idx = SUPPORTED_YEARS.indexOf(state.year);
     if (idx <= 0) return;
     state.year = SUPPORTED_YEARS[idx - 1];
@@ -100,7 +186,7 @@ function bindContent() {
     rerender();
   });
 
-  $('yearNext').addEventListener('click', () => {
+  document.getElementById('yearNext').addEventListener('click', () => {
     const idx = SUPPORTED_YEARS.indexOf(state.year);
     if (idx >= SUPPORTED_YEARS.length - 1) return;
     state.year = SUPPORTED_YEARS[idx + 1];
@@ -109,8 +195,11 @@ function bindContent() {
     rerender();
   });
 
-  $('calTitle').addEventListener('input',    e => { state.title    = e.target.value; rerender(); });
-  $('calSubtitle').addEventListener('input', e => { state.subtitle = e.target.value; rerender(); });
+  // Debounce 150мс — не перерисовывать весь календарь на каждый символ
+  document.getElementById('calTitle').addEventListener('input',
+    debounce(e => { state.title = e.target.value; renderHeaderOnly(); mark(); }, 150));
+  document.getElementById('calSubtitle').addEventListener('input',
+    debounce(e => { state.subtitle = e.target.value; renderHeaderOnly(); mark(); }, 150));
 
   document.querySelectorAll('.day-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -129,6 +218,49 @@ function bindContent() {
       state.layout = btn.dataset.layout;
       rerender();
     });
+  });
+
+  // Orientation (в основном)
+  document.querySelectorAll('.orient-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.orient-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.orientation = btn.dataset.orient;
+      renderSizeOnly();
+      mark();
+    });
+  });
+
+  document.getElementById('showWeekendColor').addEventListener('change', e => {
+    state.showWeekendColor = e.target.checked; rerender();
+  });
+  document.getElementById('showWeekNums').addEventListener('change', e => {
+    state.showWeekNums = e.target.checked; rerender();
+  });
+  document.getElementById('showHeader').addEventListener('change', e => {
+    state.showHeader = e.target.checked; rerender();
+  });
+  document.getElementById('showTatarstan').addEventListener('change', e => {
+    state.tatarstan = e.target.checked;
+    rebuildSystemHolidays();
+    rerender();
+  });
+  document.getElementById('showWorkStats').addEventListener('change', e => {
+    state.showWorkStats = e.target.checked;
+    document.getElementById('hoursGroup').style.display = state.showWorkStats ? 'block' : 'none';
+    rerender();
+  });
+  document.getElementById('hoursMinus').addEventListener('click', () => {
+    if (state.hoursPerDay <= 1) return;
+    state.hoursPerDay--;
+    document.getElementById('hoursDisplay').textContent = state.hoursPerDay;
+    rerender();
+  });
+  document.getElementById('hoursPlus').addEventListener('click', () => {
+    if (state.hoursPerDay >= 24) return;
+    state.hoursPerDay++;
+    document.getElementById('hoursDisplay').textContent = state.hoursPerDay;
+    rerender();
   });
 }
 
@@ -152,10 +284,10 @@ function bindDesign() {
     });
   });
 
-  $('customAccent').addEventListener('input', e => {
+  document.getElementById('customAccent').addEventListener('input', e => {
     setAccent(e.target.value);
     document.querySelectorAll('.accent-btn').forEach(b => b.classList.remove('active'));
-    $('customAccent').classList.add('active');
+    document.getElementById('customAccent').classList.add('active');
   });
 
   document.querySelectorAll('.size-btn').forEach(btn => {
@@ -163,46 +295,9 @@ function bindDesign() {
       document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.size = btn.dataset.size;
-      rerender();
+      renderSizeOnly();
+      mark();
     });
-  });
-
-  // Orientation
-  document.querySelectorAll('.orient-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.orient-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.orientation = btn.dataset.orient;
-      rerender();
-    });
-  });
-
-  $('showTatarstan').addEventListener('change', e => {
-    state.tatarstan = e.target.checked;
-    rebuildSystemHolidays();
-    rerender();
-  });
-  $('showWeekendColor').addEventListener('change', e => { state.showWeekendColor = e.target.checked; rerender(); });
-  $('showWeekNums').addEventListener('change',     e => { state.showWeekNums     = e.target.checked; rerender(); });
-  $('showHeader').addEventListener('change',       e => { state.showHeader       = e.target.checked; rerender(); });
-
-  $('showWorkStats').addEventListener('change', e => {
-    state.showWorkStats = e.target.checked;
-    $('hoursGroup').style.display = state.showWorkStats ? 'block' : 'none';
-    rerender();
-  });
-
-  $('hoursMinus').addEventListener('click', () => {
-    if (state.hoursPerDay <= 1) return;
-    state.hoursPerDay--;
-    $('hoursDisplay').textContent = state.hoursPerDay;
-    rerender();
-  });
-  $('hoursPlus').addEventListener('click', () => {
-    if (state.hoursPerDay >= 24) return;
-    state.hoursPerDay++;
-    $('hoursDisplay').textContent = state.hoursPerDay;
-    rerender();
   });
 }
 
@@ -210,44 +305,38 @@ function bindDesign() {
 
 function bindImage() {
   const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg','image/png','image/webp','image/gif']);
-  const MAX_IMAGE_BYTES = 15 * 1024 * 1024; // 15 MB
+  const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
-  $('imgInput').addEventListener('change', e => {
+  document.getElementById('imgInput').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
       alert('Поддерживаются только форматы: JPG, PNG, WEBP, GIF');
-      e.target.value = '';
-      return;
+      e.target.value = ''; return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
       alert(`Файл слишком большой (${(file.size/1024/1024).toFixed(1)} МБ). Максимум — 15 МБ.`);
-      e.target.value = '';
-      return;
+      e.target.value = ''; return;
     }
-
     const reader = new FileReader();
     reader.onload = ev => {
-      state.image    = ev.target.result;
-      state.cropRect = null;
-      syncImageUI();
-      rerender();
+      state.image = ev.target.result; state.cropRect = null;
+      syncImageUI(); rerender();
     };
     reader.onerror = () => alert('Не удалось прочитать файл.');
     reader.readAsDataURL(file);
   });
 
-  $('removeImgBtn').addEventListener('click', () => {
+  document.getElementById('removeImgBtn').addEventListener('click', () => {
     state.image = null; state.cropRect = null;
-    $('imgInput').value = '';
+    document.getElementById('imgInput').value = '';
     syncImageUI(); rerender();
   });
 
-  $('imgHeightRange').addEventListener('input', e => {
+  document.getElementById('imgHeightRange').addEventListener('input', e => {
     state.imgHeightPct = clamp(parseInt(e.target.value, 10), 10, 70);
-    $('imgHeightVal').textContent = state.imgHeightPct + '%';
-    rerender();
+    document.getElementById('imgHeightVal').textContent = state.imgHeightPct + '%';
+    renderCoverOnly(); mark();
   });
 
   document.querySelectorAll('.fit-btn').forEach(btn => {
@@ -256,16 +345,17 @@ function bindImage() {
       btn.classList.add('active');
       state.imgFit = btn.dataset.fit;
       state.cropRect = null;
-      rerender();
+      renderCoverOnly(); mark();
     });
   });
 
-  $('coverText').addEventListener('input', e => { state.coverText = e.target.value; renderCoverText(); });
+  document.getElementById('coverText').addEventListener('input',
+    debounce(e => { state.coverText = e.target.value; renderCoverText(); mark(); }, 150));
 
-  $('coverTextSize').addEventListener('input', e => {
+  document.getElementById('coverTextSize').addEventListener('input', e => {
     state.coverTextSize = clamp(parseInt(e.target.value, 10), 8, 200);
-    $('coverTextSizeVal').textContent = state.coverTextSize + 'px';
-    renderCoverText();
+    document.getElementById('coverTextSizeVal').textContent = state.coverTextSize + 'px';
+    renderCoverText(); mark();
   });
 
   document.querySelectorAll('.cover-color-btn').forEach(btn => {
@@ -273,15 +363,15 @@ function bindImage() {
       document.querySelectorAll('.cover-color-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.coverTextColor = btn.dataset.color;
-      $('coverTextColorPicker').value = btn.dataset.color;
-      renderCoverText();
+      document.getElementById('coverTextColorPicker').value = btn.dataset.color;
+      renderCoverText(); mark();
     });
   });
 
-  $('coverTextColorPicker').addEventListener('input', e => {
+  document.getElementById('coverTextColorPicker').addEventListener('input', e => {
     state.coverTextColor = e.target.value;
     document.querySelectorAll('.cover-color-btn').forEach(b => b.classList.remove('active'));
-    renderCoverText();
+    renderCoverText(); mark();
   });
 
   const VALID_POSITIONS = new Set([
@@ -289,7 +379,6 @@ function bindImage() {
     'center-left','center','center-right',
     'bottom-left','bottom-center','bottom-right',
   ]);
-
   document.querySelectorAll('.pos-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const pos = btn.dataset.pos;
@@ -297,7 +386,7 @@ function bindImage() {
       document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.coverTextPosition = pos;
-      renderCoverText();
+      renderCoverText(); mark();
     });
   });
 }
@@ -311,26 +400,34 @@ function bindEvents() {
       btn.classList.add('active');
     });
   });
-
-  $('addEventBtn').addEventListener('click', addEvent);
-  $('newEventName').addEventListener('keydown', e => { if (e.key === 'Enter') addEvent(); });
+  document.getElementById('addEventBtn').addEventListener('click', addEvent);
+  document.getElementById('newEventName').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addEvent();
+  });
 }
 
 function addEvent() {
-  const name   = $('newEventName').value.trim();
-  const date   = $('newEventDate').value;
-  const color  = $('newEventColor').value;
-  const repeat = $('newEventRepeat').checked;
+  const name    = document.getElementById('newEventName').value.trim();
+  const date    = document.getElementById('newEventDate').value;
+  const color   = document.getElementById('newEventColor').value;
+  const repeat  = document.getElementById('newEventRepeat').checked;
   const typeBtn = document.querySelector('.event-type-btn.active');
-  const type   = typeBtn?.dataset.type || 'holiday';
-
+  const type    = typeBtn?.dataset.type || 'holiday';
   if (!name || !date) return;
   state.events.push({ id: crypto.randomUUID(), name, date, color, repeat, type, system: false });
-  $('newEventName').value = '';
-  rerender();
+  document.getElementById('newEventName').value = '';
+  rerender(); mark();
 }
 
+// ── RESET ────────────────────────────────
 
+function bindReset() {
+  document.getElementById('resetBtn')?.addEventListener('click', () => {
+    if (!confirm('Сбросить все настройки и начать заново?')) return;
+    clearState();
+    location.reload();
+  });
+}
 
 // ── HELPERS ─────────────────────────────
 
@@ -338,13 +435,19 @@ function onDeleteEvent(id) {
   const ev = state.events.find(e => e.id === id);
   if (ev?.system) return;
   state.events = state.events.filter(e => e.id !== id);
-  rerender();
+  rerender(); mark();
 }
 
 function rerender() {
   render();
   renderLegend();
   renderEventList(onDeleteEvent);
+  mark();
+}
+
+function renderHeaderOnly() {
+  renderHeaderOnlyFn();
+  mark();
 }
 
 function setAccent(color) {
@@ -353,11 +456,13 @@ function setAccent(color) {
   rerender();
 }
 
-function fmtDateShort(s) {
-  if (!s) return '';
-  const [, m, d] = s.split('-');
-  return `${d}.${m}`;
+function mark() {
+  if (window._markDirty) window._markDirty();
 }
 
-function $(id) { return document.getElementById(id); }
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
