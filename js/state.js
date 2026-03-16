@@ -380,7 +380,7 @@ export const state = {
   accent:           '#2B2D42',
   size:             'a4',
   orientation:      'portrait', // 'portrait' | 'landscape'
-  layout:           '3x4',
+  layout:           '4x3',
   showWeekendColor: true,
   showWeekNums:     false,
   showHeader:       true,
