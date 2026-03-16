@@ -378,7 +378,7 @@ export const state = {
   subtitle:         '',
   theme:            'paper',
   accent:           '#2B2D42',
-  size:             'a3',
+  size:             'a4',
   orientation:      'portrait', // 'portrait' | 'landscape'
   layout:           '3x4',
   showWeekendColor: true,

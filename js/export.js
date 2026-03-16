@@ -141,7 +141,9 @@ async function renderToDataUrl() {
     backgroundColor: bgColor,
     logging:         false,
     width:           size.w,
+    height:          clone.scrollHeight,
     windowWidth:     size.w,
+    windowHeight:    clone.scrollHeight,
   });
 
   clone.remove();
@@ -192,7 +194,8 @@ function savePdf(dataUrl) {
     const MM  = 25.4 / 96;
     const wMM = (img.width  / 2) * MM;
     const hMM = (img.height / 2) * MM;
-    const ori = wMM >= hMM ? 'landscape' : 'portrait';
+    // Ориентация берётся из state, а не из соотношения сторон canvas
+    const ori = state.orientation === 'landscape' ? 'landscape' : 'portrait';
     const pdf = new jsPDF({ orientation: ori, unit: 'mm', format: [wMM, hMM] });
     pdf.addImage(dataUrl, 'PNG', 0, 0, wMM, hMM);
     pdf.save(makeFilename('pdf'));
