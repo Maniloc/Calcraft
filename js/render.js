@@ -40,35 +40,47 @@ export function renderSheetSize() {
   const size = getSizeWithOrientation(state.size, state.orientation);
   if (!size) return;
 
-  const ratio = size.w / size.h; // например 0.707 для A4 портрет
+  const isMobile = window.innerWidth <= 768;
+  const pad      = isMobile ? 16 : 48;
+  const stageW   = stage.clientWidth  - pad;
+  const stageH   = stage.clientHeight - pad;
+  const ratio    = size.w / size.h;
 
-  // Вписываем лист в доступную область превью
-  const stageW = stage.clientWidth  - 48; // padding 24px с каждой стороны
-  const stageH = stage.clientHeight - 48;
+  // Рендерная ширина листа: не меньше 600px чтобы месяцы читались
+  const RENDER_MIN = 600;
+  const renderW = Math.max(RENDER_MIN, Math.min(stageW, 1200));
 
-  let sheetW, sheetH;
-  if (stageW / stageH > ratio) {
-    // Ограничение по высоте
-    sheetH = Math.min(stageH, 1200);
-    sheetW = Math.round(sheetH * ratio);
+  // Задаём листу фиксированную ширину рендера
+  sheet.style.width     = renderW + 'px';
+  sheet.style.maxWidth  = renderW + 'px';
+  sheet.style.minWidth  = renderW + 'px';
+  sheet.style.height    = 'auto';
+
+  if (isMobile && renderW > stageW) {
+    // На мобиле: масштабируем через transform чтобы вписать в экран
+    const scale = stageW / renderW;
+    sheet.style.transformOrigin = 'top left';
+    sheet.style.transform       = `scale(${scale})`;
+    // Компенсируем collapsed height после scale
+    sheet.style.marginBottom = '';
+    // Обёртке задаём высоту = реальная высота после масштаба
+    requestAnimationFrame(() => {
+      const realH = sheet.offsetHeight * scale;
+      const wrap  = sheet.parentElement;
+      if (wrap) wrap.style.height = realH + 'px';
+    });
   } else {
-    // Ограничение по ширине
-    sheetW = Math.min(stageW, 1200);
-    sheetH = Math.round(sheetW / ratio);
+    sheet.style.transform       = '';
+    sheet.style.transformOrigin = '';
+    const wrap = sheet.parentElement;
+    if (wrap) wrap.style.height = '';
   }
 
-  sheet.style.width      = sheetW + 'px';
-  sheet.style.height     = 'auto'; // высота определяется контентом — НЕ фиксируем
-  sheet.style.aspectRatio = '';    // убираем aspect-ratio, пусть контент определяет высоту
-  sheet.style.maxWidth   = sheetW + 'px';
-  sheet.style.minWidth   = sheetW + 'px';
-
-  // Обновляем подпись в тулбаре
+  // Подпись в тулбаре
   const info = $('previewSizeInfo');
   if (info) {
-    const label = size.label;
-    const ori   = state.orientation === 'landscape' ? 'альбом' : 'портрет';
-    info.textContent = `${label} · ${ori}`;
+    const ori = state.orientation === 'landscape' ? 'альбом' : 'портрет';
+    info.textContent = `${size.label} · ${ori}`;
   }
 }
 

@@ -1151,6 +1151,45 @@ body {
     bottom: 0; left: 0; right: 0;
     max-height: 90dvh;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Скролл только у изображения превью, кнопка всегда видна */
+  .preview-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 120px;
+    max-height: calc(90dvh - 130px);
+    padding: 8px 0;
+  }
+
+  /* Кнопки всегда внизу модалки */
+  .modal-box--preview .modal-actions {
+    flex-shrink: 0;
+    padding: 10px 20px 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--sidebar-border);
+    background: var(--sidebar-bg);
+  }
+
+  .modal-box--preview .modal-actions .btn-primary,
+  .modal-box--preview .modal-actions .btn-ghost {
+    flex: 1;
+    padding: 14px;
+    font-size: 0.9rem;
+  }
+
+  /* preview-stage на мобиле: overflow-x hidden, листу scale */
+  .preview-stage {
+    overflow-x: hidden;
+    padding: 8px;
+  }
+
+  /* Обёртка листа растягивается под масштабированный контент */
+  .cal-sheet-wrap {
+    width: 100%;
+    overflow: visible;
   }
 
   .crop-canvas-wrap img { max-height: 40dvh; }
