@@ -238,6 +238,24 @@ export function renderLegend() {
     });
   }
 
+  // Пользовательские события (type='event') — каждое со своим цветом
+  const userEvents = state.events.filter(e => e.type === 'event' && !e.system);
+  for (const ev of userEvents) {
+    const key = ev.name + ev.color;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const dates = state.events
+      .filter(e => e.type === 'event' && e.name === ev.name && e.color === ev.color)
+      .map(e => {
+        let d = e.date;
+        if (e.repeat) { const [,m,day] = e.date.split('-'); d = `${state.year}-${m}-${day}`; }
+        return d;
+      })
+      .filter(d => d.startsWith(String(state.year)))
+      .sort();
+    items.push({ isEvent: true, color: ev.color, label: ev.name, dates: formatDateRange(dates) });
+  }
+
   // Предпраздничные сокращённые дни
   const shortEvs = state.events.filter(e => e.type === 'short');
   if (shortEvs.length > 0) {
@@ -262,6 +280,8 @@ export function renderLegend() {
       swatch.style.background = state.accent;
     } else if (item.isShort) {
       swatch.style.background = '#E67E22';
+    } else if (item.isEvent) {
+      swatch.style.background = item.color;
     } else {
       // Праздник — такой же цвет как выходные
       swatch.style.background = state.accent;

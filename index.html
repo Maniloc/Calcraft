@@ -76,7 +76,76 @@
           <div class="layout-grid" id="layoutGrid">
             <button class="layout-btn active" data-layout="3x4">3×4</button>
             <button class="layout-btn" data-layout="4x3">4×3</button>
-            <button class="layout-btn" data-layout="2x6">2×6</button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Ориентация</label>
+          <div class="orient-grid">
+            <button class="orient-btn active" data-orient="portrait">
+              <span class="orient-icon orient-icon--portrait"></span>
+              Портрет
+            </button>
+            <button class="orient-btn" data-orient="landscape">
+              <span class="orient-icon orient-icon--landscape"></span>
+              Альбом
+            </button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field-group">
+          <label class="field-label">Показывать выходные цветом</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showWeekendColor" checked />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Показывать номера недель</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showWeekNums" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Показывать блок заголовка</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showHeader" checked />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field-group">
+          <label class="field-label">🟢 Праздники Татарстана</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showTatarstan" />
+            <span class="toggle-track"></span>
+          </label>
+          <p class="tip" style="margin-top:6px">Ураза-байрам, Курбан-байрам, День Республики, День Конституции РТ</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field-group">
+          <label class="field-label">Рабочий календарь</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showWorkStats" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="field-group" id="hoursGroup" style="display:none">
+          <label class="field-label">Часов в рабочем дне</label>
+          <div class="hours-picker">
+            <button class="year-btn" id="hoursMinus">−</button>
+            <span class="year-display" id="hoursDisplay" style="font-size:1.2rem">8</span>
+            <button class="year-btn" id="hoursPlus">+</button>
           </div>
         </div>
 
@@ -138,73 +207,6 @@
           </div>
         </div>
 
-        <div class="field-group">
-          <label class="field-label">Ориентация</label>
-          <div class="orient-grid">
-            <button class="orient-btn active" data-orient="portrait">
-              <span class="orient-icon orient-icon--portrait"></span>
-              Портрет
-            </button>
-            <button class="orient-btn" data-orient="landscape">
-              <span class="orient-icon orient-icon--landscape"></span>
-              Альбом
-            </button>
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Показывать выходные цветом</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="showWeekendColor" checked />
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Показывать номера недель</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="showWeekNums" />
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Показывать блок заголовка</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="showHeader" checked />
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="field-group">
-          <label class="field-label">🟢 Праздники Татарстана</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="showTatarstan" />
-            <span class="toggle-track"></span>
-          </label>
-          <p class="tip" style="margin-top:6px">Ураза-байрам, Курбан-байрам, День Республики, День Конституции РТ</p>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="field-group">
-          <label class="field-label">Рабочий календарь</label>
-          <label class="toggle-switch">
-            <input type="checkbox" id="showWorkStats" />
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-
-        <div class="field-group" id="hoursGroup" style="display:none">
-          <label class="field-label">Часов в рабочем дне</label>
-          <div class="hours-picker">
-            <button class="year-btn" id="hoursMinus">−</button>
-            <span class="year-display" id="hoursDisplay" style="font-size:1.2rem">8</span>
-            <button class="year-btn" id="hoursPlus">+</button>
-          </div>
-        </div>
 
       </div>
 
