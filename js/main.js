@@ -310,7 +310,8 @@ function bindHolidaysEditor() {
     const year = parseInt(date.split('-')[0], 10);
     if (!RF_CALENDAR[year]) return;
 
-    const arr = type === 'short' ? RF_CALENDAR[year].short : RF_CALENDAR[year].holidays;
+    // Пользовательские добавления идут в govt (правительственные/ручные записи)
+    const arr = type === 'short' ? RF_CALENDAR[year].short : RF_CALENDAR[year].govt;
     arr.push({ date, name });
     arr.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -402,8 +403,9 @@ export function renderHolidaysEditor() {
   }
 
   const allEntries = [
-    ...cal.holidays.map(h => ({ ...h, type: 'holiday' })),
-    ...cal.short.map(h => ({ ...h, type: 'short' })),
+    ...(cal.base  || []).map(h => ({ ...h, type: 'holiday', src: 'base' })),
+    ...(cal.govt  || []).map(h => ({ ...h, type: 'holiday', src: 'govt' })),
+    ...(cal.short || []).map(h => ({ ...h, type: 'short',   src: 'short' })),
   ].sort((a, b) => a.date.localeCompare(b.date));
 
   allEntries.forEach(entry => {
@@ -426,9 +428,18 @@ export function renderHolidaysEditor() {
     del.className = 'event-del';
     del.textContent = '×';
     del.title = 'Удалить';
+    // Базовые праздники (base) нельзя удалить — это ТК РФ
+    const isDeletable = entry.src !== 'base';
+    if (!isDeletable) {
+      del.textContent = '🔒';
+      del.title = 'Базовый праздник ТК РФ — нельзя удалить';
+      del.style.cursor = 'default';
+      del.style.opacity = '0.4';
+    }
     del.addEventListener('click', () => {
+      if (!isDeletable) return;
       const year = parseInt(entry.date.split('-')[0], 10);
-      const arr  = entry.type === 'short' ? RF_CALENDAR[year].short : RF_CALENDAR[year].holidays;
+      const arr  = entry.src === 'short' ? RF_CALENDAR[year].short : RF_CALENDAR[year].govt;
       const idx  = arr.findIndex(h => h.date === entry.date && h.name === entry.name);
       if (idx !== -1) arr.splice(idx, 1);
       rebuildSystemHolidays();
