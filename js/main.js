@@ -2,86 +2,62 @@
 // main.js — Entry point
 // ═══════════════════════════════════════
 
-import { state, loadHolidays, SUPPORTED_YEARS } from './state.js';
+import { state, buildHolidaysForYear, RF_CALENDAR, SUPPORTED_YEARS } from './state.js';
 import { render, renderEventList, renderCoverText, renderLegend, syncImageUI, applyTheme } from './render.js';
 import { initCrop } from './crop.js';
 import { initExport } from './export.js';
 
 // ── BOOT ────────────────────────────────
 
-async function boot() {
-  // Синхронизируем год: picker → state → display
+function boot() {
   const now = new Date().getFullYear();
-  // Если текущий год в списке — берём его, иначе первый доступный
-  state.year = SUPPORTED_YEARS.includes(now) ? now : SUPPORTED_YEARS[0];
+  state.year = SUPPORTED_YEARS.includes(now) ? now : SUPPORTED_YEARS[1]; // 2025 as fallback
 
-  // Показываем скелетон пока грузится
-  showLoading(true);
-
-  // Загружаем праздники из JSON
-  await rebuildSystemHolidays();
-
-  // Инициализируем UI
+  rebuildSystemHolidays();
   initCrop();
   initExport();
   bindAll();
   syncYearUI();
-
-  showLoading(false);
+  renderHolidaysEditor();
   rerender();
 }
 
-boot().catch(console.error);
+boot();
 
-// ── LOADING STATE ────────────────────────
-
-function showLoading(on) {
-  let el = document.getElementById('loadingOverlay');
-  if (on && !el) {
-    el = document.createElement('div');
-    el.id = 'loadingOverlay';
-    el.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:center;z-index:9999;font-family:var(--font-ui);font-size:0.9rem;color:var(--ink-500)';
-    el.textContent = 'Загрузка праздников…';
-    document.body.appendChild(el);
-  } else if (!on && el) {
-    el.remove();
-  }
-}
-
-// ── YEAR UI SYNC ─────────────────────────
+// ── YEAR UI ─────────────────────────────
 
 function syncYearUI() {
-  const display = document.getElementById('yearDisplay');
-  if (display) display.textContent = state.year;
+  $('yearDisplay').textContent = state.year;
+  const rfYearEl = $('rfHolYear'); if (rfYearEl) rfYearEl.textContent = state.year;
 
-  // Показываем предупреждение для 2027 (переносы не утверждены)
-  const cached = (window.__holidayCache || {})[state.year];
-  const warning = cached?.warning;
-  let warnEl = document.getElementById('yearWarning');
+  const cal     = RF_CALENDAR[state.year];
+  const warning = cal?.warning;
+  let warnEl    = $('yearWarning');
 
   if (warning) {
     if (!warnEl) {
       warnEl = document.createElement('p');
       warnEl.id = 'yearWarning';
-      warnEl.style.cssText = 'font-size:0.68rem;color:#E67E22;margin-top:6px;line-height:1.4;';
-      document.getElementById('yearDisplay').closest('.field-group').appendChild(warnEl);
+      warnEl.className = 'year-warning';
+      $('yearDisplay').closest('.field-group').appendChild(warnEl);
     }
     warnEl.textContent = '⚠ ' + warning;
   } else if (warnEl) {
     warnEl.remove();
   }
+
+  // Disable nav buttons at boundaries
+  const idx = SUPPORTED_YEARS.indexOf(state.year);
+  $('yearPrev').disabled = idx <= 0;
+  $('yearNext').disabled = idx >= SUPPORTED_YEARS.length - 1;
 }
 
 // ── REBUILD SYSTEM HOLIDAYS ──────────────
 
-async function rebuildSystemHolidays() {
-  const { events: sysEvents, warning } = await loadHolidays(state.year);
-  // Сохраняем в глобальный кэш для syncYearUI
-  window.__holidayCache = window.__holidayCache || {};
-  window.__holidayCache[state.year] = { warning };
-
-  const userEvents = state.events.filter(e => !e.system);
-  state.events = [...sysEvents, ...userEvents];
+function rebuildSystemHolidays() {
+  const sys       = buildHolidaysForYear(state.year);
+  const userEvs   = state.events.filter(e => !e.system);
+  state.events    = [...sys, ...userEvs];
 }
 
 // ── BIND ALL ────────────────────────────
@@ -92,6 +68,7 @@ function bindAll() {
   bindDesign();
   bindImage();
   bindEvents();
+  bindHolidaysEditor();
 }
 
 // ── TABS ────────────────────────────────
@@ -110,21 +87,23 @@ function bindTabs() {
 // ── CONTENT TAB ─────────────────────────
 
 function bindContent() {
-  $('yearPrev').addEventListener('click', async () => {
+  $('yearPrev').addEventListener('click', () => {
     const idx = SUPPORTED_YEARS.indexOf(state.year);
     if (idx <= 0) return;
     state.year = SUPPORTED_YEARS[idx - 1];
-    await rebuildSystemHolidays();
+    rebuildSystemHolidays();
     syncYearUI();
+    renderHolidaysEditor();
     rerender();
   });
 
-  $('yearNext').addEventListener('click', async () => {
+  $('yearNext').addEventListener('click', () => {
     const idx = SUPPORTED_YEARS.indexOf(state.year);
     if (idx >= SUPPORTED_YEARS.length - 1) return;
     state.year = SUPPORTED_YEARS[idx + 1];
-    await rebuildSystemHolidays();
+    rebuildSystemHolidays();
     syncYearUI();
+    renderHolidaysEditor();
     rerender();
   });
 
@@ -225,16 +204,13 @@ function bindImage() {
   });
 
   $('removeImgBtn').addEventListener('click', () => {
-    state.image    = null;
-    state.cropRect = null;
+    state.image = null; state.cropRect = null;
     $('imgInput').value = '';
-    syncImageUI();
-    rerender();
+    syncImageUI(); rerender();
   });
 
-  const slider = $('imgHeightRange');
-  slider.addEventListener('input', () => {
-    state.imgHeightPct = parseInt(slider.value, 10);
+  $('imgHeightRange').addEventListener('input', e => {
+    state.imgHeightPct = parseInt(e.target.value, 10);
     $('imgHeightVal').textContent = state.imgHeightPct + '%';
     rerender();
   });
@@ -243,16 +219,13 @@ function bindImage() {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.fit-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      state.imgFit   = btn.dataset.fit;
+      state.imgFit = btn.dataset.fit;
       state.cropRect = null;
       rerender();
     });
   });
 
-  $('coverText').addEventListener('input', e => {
-    state.coverText = e.target.value;
-    renderCoverText();
-  });
+  $('coverText').addEventListener('input', e => { state.coverText = e.target.value; renderCoverText(); });
 
   $('coverTextSize').addEventListener('input', e => {
     state.coverTextSize = parseInt(e.target.value, 10);
@@ -301,17 +274,114 @@ function bindEvents() {
 }
 
 function addEvent() {
-  const name    = $('newEventName').value.trim();
-  const date    = $('newEventDate').value;
-  const color   = $('newEventColor').value;
-  const repeat  = $('newEventRepeat').checked;
+  const name   = $('newEventName').value.trim();
+  const date   = $('newEventDate').value;
+  const color  = $('newEventColor').value;
+  const repeat = $('newEventRepeat').checked;
   const typeBtn = document.querySelector('.event-type-btn.active');
-  const type    = typeBtn ? typeBtn.dataset.type : 'holiday';
+  const type   = typeBtn?.dataset.type || 'holiday';
 
   if (!name || !date) return;
   state.events.push({ id: Date.now() + Math.random(), name, date, color, repeat, type, system: false });
   $('newEventName').value = '';
   rerender();
+}
+
+// ── HOLIDAYS EDITOR TAB ─────────────────
+
+function bindHolidaysEditor() {
+  renderHolidaysEditor();
+
+  $('addHolidayRfBtn').addEventListener('click', () => {
+    const name = $('rfHolName').value.trim();
+    const date = $('rfHolDate').value;
+    const type = document.querySelector('.rf-type-btn.active')?.dataset.type || 'holiday';
+    if (!name || !date) return;
+
+    // Find the year from date
+    const year = parseInt(date.split('-')[0], 10);
+    if (!RF_CALENDAR[year]) return;
+
+    const arr = type === 'short' ? RF_CALENDAR[year].short : RF_CALENDAR[year].holidays;
+    arr.push({ date, name });
+    arr.sort((a, b) => a.date.localeCompare(b.date));
+
+    $('rfHolName').value = '';
+    rebuildSystemHolidays();
+    renderHolidaysEditor();
+    rerender();
+  });
+
+  // Type toggle
+  document.querySelectorAll('.rf-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.rf-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
+export function renderHolidaysEditor() {
+  const container = $('rfHolidaysList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const cal = RF_CALENDAR[state.year];
+  if (!cal) return;
+
+  // Warning banner
+  if (cal.warning) {
+    const warn = document.createElement('div');
+    warn.className = 'rf-warning';
+    warn.textContent = '⚠ ' + cal.warning;
+    container.appendChild(warn);
+  }
+
+  const allEntries = [
+    ...cal.holidays.map(h => ({ ...h, type: 'holiday' })),
+    ...cal.short.map(h => ({ ...h, type: 'short' })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+
+  allEntries.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = 'rf-entry';
+
+    const badge = document.createElement('span');
+    badge.className = 'rf-badge rf-badge--' + entry.type;
+    badge.textContent = entry.type === 'holiday' ? 'вых.' : 'сокр.';
+
+    const date = document.createElement('span');
+    date.className = 'rf-entry-date';
+    date.textContent = fmtDateShort(entry.date);
+
+    const name = document.createElement('span');
+    name.className = 'rf-entry-name';
+    name.textContent = entry.name;
+
+    const del = document.createElement('button');
+    del.className = 'event-del';
+    del.textContent = '×';
+    del.title = 'Удалить';
+    del.addEventListener('click', () => {
+      const year = parseInt(entry.date.split('-')[0], 10);
+      const arr  = entry.type === 'short' ? RF_CALENDAR[year].short : RF_CALENDAR[year].holidays;
+      const idx  = arr.findIndex(h => h.date === entry.date && h.name === entry.name);
+      if (idx !== -1) arr.splice(idx, 1);
+      rebuildSystemHolidays();
+      renderHolidaysEditor();
+      rerender();
+    });
+
+    row.append(badge, date, name, del);
+    container.appendChild(row);
+  });
+
+  if (allEntries.length === 0) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'font-size:0.75rem;color:var(--ink-400,#a09890);text-align:center;padding:12px 0';
+    empty.textContent = 'Нет записей для этого года';
+    container.appendChild(empty);
+  }
 }
 
 // ── HELPERS ─────────────────────────────
@@ -320,9 +390,8 @@ function rerender() {
   render();
   renderLegend();
   renderEventList(id => {
-    // Системные праздники нельзя удалить через список
     const ev = state.events.find(e => e.id === id);
-    if (ev?.system) return;
+    if (ev?.system) return; // системные нельзя удалить через этот список
     state.events = state.events.filter(e => e.id !== id);
     rerender();
   });
@@ -332,6 +401,12 @@ function setAccent(color) {
   state.accent = color;
   applyTheme();
   rerender();
+}
+
+function fmtDateShort(s) {
+  if (!s) return '';
+  const [, m, d] = s.split('-');
+  return `${d}.${m}`;
 }
 
 function $(id) { return document.getElementById(id); }

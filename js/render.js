@@ -181,7 +181,8 @@ export function renderEventList(onDelete) {
     dot.style.background = ev.color;
 
     const badge = el('span', 'event-badge event-badge--' + ev.type);
-    badge.textContent = ev.type === 'holiday' ? 'празд.' : 'событ.';
+    const badgeMap = { holiday: 'празд.', short: 'сокр.', event: 'событ.' };
+    badge.textContent = badgeMap[ev.type] || 'событ.';
 
     const name = el('span', 'event-name');
     name.textContent = ev.name;
@@ -190,8 +191,9 @@ export function renderEventList(onDelete) {
     const date = el('span', 'event-date');
     date.textContent = fmtDate(ev.date);
 
-    const del = el('button', 'event-del');
-    del.textContent = '×';
+    const del = el('button', ev.system ? 'event-del event-del--system' : 'event-del');
+    del.textContent = ev.system ? '🔒' : '×';
+    del.title = ev.system ? 'Системный праздник — нельзя удалить' : 'Удалить';
     del.addEventListener('click', () => onDelete(ev.id));
 
     item.append(dot, badge, name, date, del);
@@ -255,8 +257,6 @@ function makeMonth(monthIdx, evMap, today) {
     grid.appendChild(el('div', 'mini-cell is-empty'));
   }
 
-  let currentWeekStart = null;
-
   for (let d = 1; d <= lastDate; d++) {
     const date   = new Date(state.year, monthIdx, d);
     const jsDow  = date.getDay();
@@ -300,7 +300,7 @@ function makeMonth(monthIdx, evMap, today) {
 
   // Рабочая статистика
   if (state.showWorkStats) {
-    const hours = workDays * state.hoursPerDay;
+    const hours = workDays * state.hoursPerDay - shortDays;
     const stats = el('div', 'work-stats');
     stats.innerHTML =
       `<span class="ws-days">${workDays}\u202fр.д.</span>` +

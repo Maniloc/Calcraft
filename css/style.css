@@ -659,3 +659,56 @@ body {
   border-radius: 2px;
   flex-shrink: 0;
 }
+
+/* ── HOLIDAYS EDITOR ── */
+.rf-list { margin-bottom: 4px; }
+
+.rf-entry {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 8px; background: white;
+  border: 1px solid var(--sidebar-border); border-radius: var(--r-md);
+  margin-bottom: 3px; font-size: 0.78rem;
+}
+.rf-badge {
+  font-size: 0.58rem; font-weight: 700; padding: 1px 4px;
+  border-radius: 3px; flex-shrink: 0; letter-spacing: 0.04em;
+}
+.rf-badge--holiday { background: #fde8e8; color: #C0392B; }
+.rf-badge--short   { background: #fef3e2; color: #E67E22; }
+
+.rf-entry-date {
+  font-size: 0.72rem; color: var(--ink-500);
+  flex-shrink: 0; font-weight: 500;
+}
+.rf-entry-name {
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--ink-900);
+}
+
+.rf-warning {
+  font-size: 0.72rem; color: #E67E22;
+  background: #fef9f0; border: 1px solid #f5d9a0;
+  border-radius: var(--r-md); padding: 8px 10px;
+  margin-bottom: 10px; line-height: 1.5;
+}
+
+.rf-type-btn {
+  flex: 1; padding: 6px; border: 1.5px solid var(--sidebar-border);
+  border-radius: var(--r-md); background: white;
+  font-family: var(--font-ui); font-size: 0.72rem; font-weight: 500;
+  color: var(--ink-500); cursor: pointer; transition: all var(--transition);
+}
+.rf-type-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* Year warning under year picker */
+.year-warning {
+  font-size: 0.68rem; color: #E67E22;
+  margin-top: 5px; line-height: 1.4;
+}
+
+/* Lock icon for system events */
+.event-del--system {
+  color: var(--ink-300) !important; cursor: default !important;
+  font-size: 0.7rem !important;
+}
+.event-del--system:hover { color: var(--ink-300) !important; }
