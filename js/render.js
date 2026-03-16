@@ -203,10 +203,6 @@ export function renderHeader() {
   if (footerWrap) footerWrap.style.display = state.footer ? '' : 'none';
 }
 
-export function renderHeaderOnly() {
-  renderHeader();
-}
-
 // ── MONTHS GRID ─────────────────────────
 
 export function renderMonths() {
