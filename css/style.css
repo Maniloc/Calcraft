@@ -380,7 +380,6 @@ body {
 /* layouts */
 .months-grid.layout-3x4 { grid-template-columns: repeat(3, 1fr); }
 .months-grid.layout-4x3 { grid-template-columns: repeat(4, 1fr); }
-.months-grid.layout-2x6 { grid-template-columns: repeat(2, 1fr); }
 
 /* Month block */
 .month-block {
@@ -398,8 +397,6 @@ body {
 .month-block:nth-child(3n) { border-right: none; } /* 3x4 */
 .months-grid.layout-4x3 .month-block:nth-child(3n) { border-right: 1px solid var(--cal-border); }
 .months-grid.layout-4x3 .month-block:nth-child(4n) { border-right: none; }
-.months-grid.layout-2x6 .month-block:nth-child(3n) { border-right: 1px solid var(--cal-border); }
-.months-grid.layout-2x6 .month-block:nth-child(2n) { border-right: none; }
 
 .month-name {
   font-family: var(--font-display); font-size: 0.88rem; font-weight: 400;

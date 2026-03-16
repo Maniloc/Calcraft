@@ -2,7 +2,7 @@
 // main.js — Entry point
 // ═══════════════════════════════════════
 
-import { state, buildHolidaysForYear, buildTatarHolidaysForYear, RF_CALENDAR, SUPPORTED_YEARS, getSizeWithOrientation } from './state.js';
+import { state, buildHolidaysForYear, buildTatarHolidaysForYear, RF_CALENDAR, SUPPORTED_YEARS } from './state.js';
 import { render, renderEventList, renderCoverText, renderLegend, renderSheetSize, syncImageUI, applyTheme } from './render.js';
 import { initCrop } from './crop.js';
 import { initExport } from './export.js';
@@ -34,8 +34,6 @@ boot();
 
 function syncYearUI() {
   $('yearDisplay').textContent = state.year;
-  const rfYearEl = $('rfHolYear'); if (rfYearEl) rfYearEl.textContent = state.year;
-
   const cal     = RF_CALENDAR[state.year];
   const warning = cal?.warning;
   let warnEl    = $('yearWarning');
@@ -99,7 +97,6 @@ function bindContent() {
     state.year = SUPPORTED_YEARS[idx - 1];
     rebuildSystemHolidays();
     syncYearUI();
-    renderHolidaysEditor();
     rerender();
   });
 
@@ -109,7 +106,6 @@ function bindContent() {
     state.year = SUPPORTED_YEARS[idx + 1];
     rebuildSystemHolidays();
     syncYearUI();
-    renderHolidaysEditor();
     rerender();
   });
 
@@ -184,7 +180,6 @@ function bindDesign() {
   $('showTatarstan').addEventListener('change', e => {
     state.tatarstan = e.target.checked;
     rebuildSystemHolidays();
-    renderHolidaysEditor();
     rerender();
   });
   $('showWeekendColor').addEventListener('change', e => { state.showWeekendColor = e.target.checked; rerender(); });
@@ -214,9 +209,24 @@ function bindDesign() {
 // ── IMAGE TAB ───────────────────────────
 
 function bindImage() {
+  const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg','image/png','image/webp','image/gif']);
+  const MAX_IMAGE_BYTES = 15 * 1024 * 1024; // 15 MB
+
   $('imgInput').addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      alert('Поддерживаются только форматы: JPG, PNG, WEBP, GIF');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert(`Файл слишком большой (${(file.size/1024/1024).toFixed(1)} МБ). Максимум — 15 МБ.`);
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = ev => {
       state.image    = ev.target.result;
@@ -224,6 +234,7 @@ function bindImage() {
       syncImageUI();
       rerender();
     };
+    reader.onerror = () => alert('Не удалось прочитать файл.');
     reader.readAsDataURL(file);
   });
 
@@ -234,7 +245,7 @@ function bindImage() {
   });
 
   $('imgHeightRange').addEventListener('input', e => {
-    state.imgHeightPct = parseInt(e.target.value, 10);
+    state.imgHeightPct = clamp(parseInt(e.target.value, 10), 10, 70);
     $('imgHeightVal').textContent = state.imgHeightPct + '%';
     rerender();
   });
@@ -252,7 +263,7 @@ function bindImage() {
   $('coverText').addEventListener('input', e => { state.coverText = e.target.value; renderCoverText(); });
 
   $('coverTextSize').addEventListener('input', e => {
-    state.coverTextSize = parseInt(e.target.value, 10);
+    state.coverTextSize = clamp(parseInt(e.target.value, 10), 8, 200);
     $('coverTextSizeVal').textContent = state.coverTextSize + 'px';
     renderCoverText();
   });
@@ -273,11 +284,19 @@ function bindImage() {
     renderCoverText();
   });
 
+  const VALID_POSITIONS = new Set([
+    'top-left','top-center','top-right',
+    'center-left','center','center-right',
+    'bottom-left','bottom-center','bottom-right',
+  ]);
+
   document.querySelectorAll('.pos-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      const pos = btn.dataset.pos;
+      if (!VALID_POSITIONS.has(pos)) return;
       document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      state.coverTextPosition = btn.dataset.pos;
+      state.coverTextPosition = pos;
       renderCoverText();
     });
   });
@@ -306,174 +325,12 @@ function addEvent() {
   const type   = typeBtn?.dataset.type || 'holiday';
 
   if (!name || !date) return;
-  state.events.push({ id: Date.now() + Math.random(), name, date, color, repeat, type, system: false });
+  state.events.push({ id: crypto.randomUUID(), name, date, color, repeat, type, system: false });
   $('newEventName').value = '';
   rerender();
 }
 
-// ── HOLIDAYS EDITOR TAB ─────────────────
 
-function bindHolidaysEditor() {
-  renderHolidaysEditor();
-
-  $('addHolidayRfBtn').addEventListener('click', () => {
-    const name = $('rfHolName').value.trim();
-    const date = $('rfHolDate').value;
-    const type = document.querySelector('.rf-type-btn.active')?.dataset.type || 'holiday';
-    if (!name || !date) return;
-
-    // Find the year from date
-    const year = parseInt(date.split('-')[0], 10);
-    if (!RF_CALENDAR[year]) return;
-
-    // Пользовательские добавления идут в govt (правительственные/ручные записи)
-    const arr = type === 'short' ? RF_CALENDAR[year].short : RF_CALENDAR[year].govt;
-    arr.push({ date, name });
-    arr.sort((a, b) => a.date.localeCompare(b.date));
-
-    $('rfHolName').value = '';
-    rebuildSystemHolidays();
-    renderHolidaysEditor();
-    rerender();
-  });
-
-  // Type toggle
-  document.querySelectorAll('.rf-type-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.rf-type-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
-}
-
-export function renderHolidaysEditor() {
-  const container = $('rfHolidaysList');
-  if (!container) return;
-  container.innerHTML = '';
-
-  const cal = RF_CALENDAR[state.year];
-  if (!cal) return;
-
-  // Tatarstan section
-  if (state.tatarstan) {
-    const tCal = RT_CALENDAR[state.year];
-    if (tCal) {
-      const tHeader = document.createElement('div');
-      tHeader.className = 'rf-section-header';
-      tHeader.textContent = '🟢 Праздники Республики Татарстан';
-      container.appendChild(tHeader);
-
-      if (tCal.warning) {
-        const tw = document.createElement('div');
-        tw.className = 'rf-warning';
-        tw.textContent = '⚠ ' + tCal.warning;
-        container.appendChild(tw);
-      }
-
-      const tEntries = [
-        ...tCal.holidays.map(h => ({ ...h, type: 'holiday' })),
-        ...tCal.short.map(h => ({ ...h, type: 'short' })),
-      ].sort((a, b) => a.date.localeCompare(b.date));
-
-      tEntries.forEach(entry => {
-        const row = document.createElement('div');
-        row.className = 'rf-entry rf-entry--region';
-        const badge = document.createElement('span');
-        badge.className = 'rf-badge rf-badge--' + entry.type;
-        badge.textContent = entry.type === 'holiday' ? 'вых.' : 'сокр.';
-        const date = document.createElement('span');
-        date.className = 'rf-entry-date';
-        date.textContent = fmtDateShort(entry.date);
-        const name = document.createElement('span');
-        name.className = 'rf-entry-name';
-        name.textContent = entry.name;
-        const del = document.createElement('button');
-        del.className = 'event-del';
-        del.textContent = '×';
-        del.addEventListener('click', () => {
-          const year = parseInt(entry.date.split('-')[0], 10);
-          const arr  = entry.type === 'short' ? RT_CALENDAR[year].short : RT_CALENDAR[year].holidays;
-          const idx  = arr.findIndex(h => h.date === entry.date && h.name === entry.name);
-          if (idx !== -1) arr.splice(idx, 1);
-          rebuildSystemHolidays();
-          renderHolidaysEditor();
-          rerender();
-        });
-        row.append(badge, date, name, del);
-        container.appendChild(row);
-      });
-
-      const rfHeader = document.createElement('div');
-      rfHeader.className = 'rf-section-header';
-      rfHeader.textContent = '🔴 Федеральные праздники РФ';
-      container.appendChild(rfHeader);
-    }
-  }
-
-  // Warning banner
-  if (cal.warning) {
-    const warn = document.createElement('div');
-    warn.className = 'rf-warning';
-    warn.textContent = '⚠ ' + cal.warning;
-    container.appendChild(warn);
-  }
-
-  const allEntries = [
-    ...(cal.base  || []).map(h => ({ ...h, type: 'holiday', src: 'base' })),
-    ...(cal.govt  || []).map(h => ({ ...h, type: 'holiday', src: 'govt' })),
-    ...(cal.short || []).map(h => ({ ...h, type: 'short',   src: 'short' })),
-  ].sort((a, b) => a.date.localeCompare(b.date));
-
-  allEntries.forEach(entry => {
-    const row = document.createElement('div');
-    row.className = 'rf-entry';
-
-    const badge = document.createElement('span');
-    badge.className = 'rf-badge rf-badge--' + entry.type;
-    badge.textContent = entry.type === 'holiday' ? 'вых.' : 'сокр.';
-
-    const date = document.createElement('span');
-    date.className = 'rf-entry-date';
-    date.textContent = fmtDateShort(entry.date);
-
-    const name = document.createElement('span');
-    name.className = 'rf-entry-name';
-    name.textContent = entry.name;
-
-    const del = document.createElement('button');
-    del.className = 'event-del';
-    del.textContent = '×';
-    del.title = 'Удалить';
-    // Базовые праздники (base) нельзя удалить — это ТК РФ
-    const isDeletable = entry.src !== 'base';
-    if (!isDeletable) {
-      del.textContent = '🔒';
-      del.title = 'Базовый праздник ТК РФ — нельзя удалить';
-      del.style.cursor = 'default';
-      del.style.opacity = '0.4';
-    }
-    del.addEventListener('click', () => {
-      if (!isDeletable) return;
-      const year = parseInt(entry.date.split('-')[0], 10);
-      const arr  = entry.src === 'short' ? RF_CALENDAR[year].short : RF_CALENDAR[year].govt;
-      const idx  = arr.findIndex(h => h.date === entry.date && h.name === entry.name);
-      if (idx !== -1) arr.splice(idx, 1);
-      rebuildSystemHolidays();
-      renderHolidaysEditor();
-      rerender();
-    });
-
-    row.append(badge, date, name, del);
-    container.appendChild(row);
-  });
-
-  if (allEntries.length === 0) {
-    const empty = document.createElement('p');
-    empty.style.cssText = 'font-size:0.75rem;color:var(--ink-400,#a09890);text-align:center;padding:12px 0';
-    empty.textContent = 'Нет записей для этого года';
-    container.appendChild(empty);
-  }
-}
 
 // ── HELPERS ─────────────────────────────
 
@@ -503,3 +360,4 @@ function fmtDateShort(s) {
 }
 
 function $(id) { return document.getElementById(id); }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }

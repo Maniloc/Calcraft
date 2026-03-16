@@ -48,12 +48,12 @@
 
         <div class="field-group">
           <label class="field-label">Заголовок</label>
-          <input type="text" id="calTitle" class="field-input" placeholder="Например: Команда дизайна" />
+          <input type="text" id="calTitle" class="field-input" placeholder="Например: Команда дизайна" maxlength="80" />
         </div>
 
         <div class="field-group">
           <label class="field-label">Подпись</label>
-          <input type="text" id="calSubtitle" class="field-input" placeholder="Дополнительный текст" />
+          <input type="text" id="calSubtitle" class="field-input" placeholder="Дополнительный текст" maxlength="80" />
         </div>
 
         <div class="divider"></div>
@@ -246,7 +246,7 @@
           <div class="divider"></div>
           <div class="field-group">
             <label class="field-label">Текст на обложке</label>
-            <textarea id="coverText" class="field-input field-textarea" placeholder="Например: 2025
+            <textarea id="coverText" class="field-input field-textarea" maxlength="200" placeholder="Например: 2025
 Команда дизайна" rows="3"></textarea>
           </div>
           <div class="field-group" id="coverTextOptions">
@@ -287,7 +287,7 @@
           <label class="field-label">Праздники и события</label>
           <div id="eventList" class="event-list"></div>
           <div class="event-add-form">
-            <input type="text" id="newEventName" class="field-input" placeholder="Название…" />
+            <input type="text" id="newEventName" class="field-input" placeholder="Название…" maxlength="60" />
             <div class="event-add-row">
               <input type="date" id="newEventDate" class="field-input flex-1" />
               <input type="color" id="newEventColor" class="color-dot-input" value="#C0392B" />
