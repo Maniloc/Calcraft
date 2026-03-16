@@ -239,7 +239,8 @@ function makeMonth(monthIdx, evMap, today) {
   const firstDay = new Date(state.year, monthIdx, 1);
   const lastDate = new Date(state.year, monthIdx + 1, 0).getDate();
   const startDow = (firstDay.getDay() + 6) % 7; // Mon=0
-  let workDays = 0;
+  let workDays  = 0;
+  let shortDays = 0; // предпраздничные рабочие дни (-1ч каждый)
 
   // Пустые ячейки перед 1-м числом
   if (state.showWeekNums) {
@@ -276,6 +277,8 @@ function makeMonth(monthIdx, evMap, today) {
     if (!isWE && !isHol) workDays++;
 
     const isShort = evs.some(e => e.type === 'short');
+    // Предпраздничный считается рабочим, но -1ч
+    if (isShort && !isWE && !isHol) shortDays++;
 
     const classes = ['mini-cell'];
     if (isWE)    classes.push('is-weekend');
