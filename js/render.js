@@ -86,7 +86,7 @@ export function renderCoverText() {
 
   const overlay = document.createElement('div');
   overlay.id = 'coverTextOverlay';
-  overlay.className = 'cover-text-overlay cover-text-' + state.coverTextPosition;
+  overlay.className = 'cover-text-overlay pos-' + state.coverTextPosition;
 
   const span = document.createElement('span');
   span.className = 'cover-text-content';
@@ -171,9 +171,18 @@ function makeMonth(monthIdx, evMap, today) {
 
   const grid = el('div', 'mini-grid');
 
-  // Заголовок дней недели
+  // Заголовок дней недели (+ колонка номеров недель если включено)
+  if (state.showWeekNums) {
+    const wh = el('div', 'mini-dow mini-wn-header');
+    wh.textContent = '№';
+    grid.style.gridTemplateColumns = '1.2fr repeat(7, 1fr)';
+    grid.appendChild(wh);
+  } else {
+    grid.style.gridTemplateColumns = '';
+  }
+
   DOW_SHORT.forEach((label, i) => {
-    const jsDow = i === 6 ? 0 : i + 1; // i=0→Пн(1)…i=6→Вс(0)
+    const jsDow = i === 6 ? 0 : i + 1;
     const d = el('div', 'mini-dow' + (state.weekends.has(jsDow) ? ' is-weekend' : ''));
     d.textContent = label;
     grid.appendChild(d);
@@ -185,32 +194,47 @@ function makeMonth(monthIdx, evMap, today) {
   let workDays = 0;
 
   // Пустые ячейки перед 1-м числом
+  if (state.showWeekNums) {
+    // Перед первой строкой: номер недели + пустые ячейки
+    if (startDow > 0) {
+      const wn = el('div', 'mini-wn');
+      wn.textContent = getWeekNumber(new Date(state.year, monthIdx, 1));
+      grid.appendChild(wn);
+    }
+  }
   for (let i = 0; i < startDow; i++) {
     grid.appendChild(el('div', 'mini-cell is-empty'));
   }
 
+  let currentWeekStart = null;
+
   for (let d = 1; d <= lastDate; d++) {
     const date   = new Date(state.year, monthIdx, d);
     const jsDow  = date.getDay();
+    const dowMon = (jsDow + 6) % 7; // Mon=0
     const isWE   = state.weekends.has(jsDow);
     const key    = toKey(state.year, monthIdx + 1, d);
     const evs    = evMap[key] || [];
     const isHol  = evs.some(e => e.type === 'holiday');
     const hasEv  = evs.some(e => e.type === 'event');
 
-    // Рабочие дни: не выходной; праздники не вычитаем (по договорённости)
+    // Вставляем номер недели в начале каждой строки (понедельник)
+    if (state.showWeekNums && dowMon === 0) {
+      const wn = el('div', 'mini-wn');
+      wn.textContent = getWeekNumber(date);
+      grid.appendChild(wn);
+    }
+
     if (!isWE) workDays++;
 
     const classes = ['mini-cell'];
-    if (isWE)   classes.push('is-weekend');
-    // ❌ is-today убран — печатный календарь, подсветка сегодня не нужна
-    if (isHol)  classes.push('is-holiday');
-    if (hasEv)  classes.push('has-event');
+    if (isWE)  classes.push('is-weekend');
+    if (isHol) classes.push('is-holiday');
+    if (hasEv) classes.push('has-event');
 
     const cell = el('div', classes.join(' '));
     cell.textContent = d;
 
-    // Цвет точки события
     const ev = evs.find(e => e.type === 'event');
     if (ev) cell.style.setProperty('--event-color', ev.color);
 
@@ -251,6 +275,15 @@ function buildEventMap() {
 
 function toKey(y, m, d) {
   return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+// ISO week number (Mon=first day)
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
 function fmtDate(s) {

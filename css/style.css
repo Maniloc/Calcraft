@@ -369,6 +369,13 @@ body {
   padding: 10px 10px 10px;
   border-right: 1px solid var(--cal-border);
   border-bottom: 1px solid var(--cal-border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mini grid grows to fill available space, pushing work-stats to bottom */
+.month-block .mini-grid {
+  flex: 1;
 }
 .month-block:nth-child(3n) { border-right: none; } /* 3x4 */
 .months-grid.layout-4x3 .month-block:nth-child(3n) { border-right: 1px solid var(--cal-border); }
@@ -491,11 +498,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  margin-top: 5px;
-  padding: 3px 6px;
-  background: color-mix(in srgb, var(--cal-weekend) 8%, var(--cal-bg));
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--cal-weekend) 15%, transparent);
+  margin-top: auto;    /* прижать к низу ячейки */
+  padding-top: 5px;
+  padding-bottom: 2px;
 }
 .ws-days {
   font-size: 0.6rem;
@@ -534,15 +539,15 @@ body {
   display: flex; pointer-events: none;
   padding: 24px;
 }
-.cover-text-overlay.top-left     { align-items: flex-start; justify-content: flex-start; }
-.cover-text-overlay.top-center   { align-items: flex-start; justify-content: center; }
-.cover-text-overlay.top-right    { align-items: flex-start; justify-content: flex-end; }
-.cover-text-overlay.center-left  { align-items: center;     justify-content: flex-start; }
-.cover-text-overlay.center       { align-items: center;     justify-content: center; }
-.cover-text-overlay.center-right { align-items: center;     justify-content: flex-end; }
-.cover-text-overlay.bottom-left  { align-items: flex-end;   justify-content: flex-start; }
-.cover-text-overlay.bottom-center{ align-items: flex-end;   justify-content: center; }
-.cover-text-overlay.bottom-right { align-items: flex-end;   justify-content: flex-end; }
+.cover-text-overlay.pos-top-left     { align-items: flex-start; justify-content: flex-start; }
+.cover-text-overlay.pos-top-center   { align-items: flex-start; justify-content: center; }
+.cover-text-overlay.pos-top-right    { align-items: flex-start; justify-content: flex-end; }
+.cover-text-overlay.pos-center-left  { align-items: center;     justify-content: flex-start; }
+.cover-text-overlay.pos-center       { align-items: center;     justify-content: center; }
+.cover-text-overlay.pos-center-right { align-items: center;     justify-content: flex-end; }
+.cover-text-overlay.pos-bottom-left  { align-items: flex-end;   justify-content: flex-start; }
+.cover-text-overlay.pos-bottom-center{ align-items: flex-end;   justify-content: center; }
+.cover-text-overlay.pos-bottom-right { align-items: flex-end;   justify-content: flex-end; }
 
 .cover-text-content {
   font-family: var(--font-display);
@@ -597,3 +602,15 @@ body {
 }
 .event-badge--holiday { background: color-mix(in srgb, #C0392B 12%, white); color: #C0392B; }
 .event-badge--event   { background: color-mix(in srgb, #3B5BDB 12%, white); color: #3B5BDB; }
+
+/* ── WEEK NUMBERS ── */
+.mini-wn-header {
+  font-size: 0.5rem; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--cal-muted);
+  text-align: center; padding: 2px 0 3px; opacity: 0.6;
+}
+.mini-wn {
+  font-size: 0.52rem; text-align: center;
+  padding: 2px 1px; color: var(--cal-muted);
+  line-height: 1.6; opacity: 0.55;
+}
