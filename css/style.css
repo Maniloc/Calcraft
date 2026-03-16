@@ -728,3 +728,16 @@ body {
   margin-left: 3px;
 }
 .legend-dates::before { content: '— '; }
+
+/* ── HOLIDAYS EDITOR SECTIONS ── */
+.rf-section-header {
+  font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.04em; color: var(--ink-700);
+  padding: 8px 0 5px; margin-top: 4px;
+  border-top: 1px solid var(--sidebar-border);
+}
+.rf-section-header:first-child { border-top: none; padding-top: 0; }
+
+.rf-entry--region .rf-badge--holiday {
+  background: #e8f8ef; color: #27AE60;
+}

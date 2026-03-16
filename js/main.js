@@ -2,7 +2,7 @@
 // main.js — Entry point
 // ═══════════════════════════════════════
 
-import { state, buildHolidaysForYear, RF_CALENDAR, SUPPORTED_YEARS } from './state.js';
+import { state, buildHolidaysForYear, buildTatarHolidaysForYear, RF_CALENDAR, RT_CALENDAR, SUPPORTED_YEARS } from './state.js';
 import { render, renderEventList, renderCoverText, renderLegend, syncImageUI, applyTheme } from './render.js';
 import { initCrop } from './crop.js';
 import { initExport } from './export.js';
@@ -55,9 +55,10 @@ function syncYearUI() {
 // ── REBUILD SYSTEM HOLIDAYS ──────────────
 
 function rebuildSystemHolidays() {
-  const sys       = buildHolidaysForYear(state.year);
-  const userEvs   = state.events.filter(e => !e.system);
-  state.events    = [...sys, ...userEvs];
+  const sys     = buildHolidaysForYear(state.year);
+  const tatar   = state.tatarstan ? buildTatarHolidaysForYear(state.year) : [];
+  const userEvs = state.events.filter(e => !e.system);
+  state.events  = [...sys, ...tatar, ...userEvs];
 }
 
 // ── BIND ALL ────────────────────────────
@@ -164,6 +165,12 @@ function bindDesign() {
     });
   });
 
+  $('showTatarstan').addEventListener('change', e => {
+    state.tatarstan = e.target.checked;
+    rebuildSystemHolidays();
+    renderHolidaysEditor();
+    rerender();
+  });
   $('showWeekendColor').addEventListener('change', e => { state.showWeekendColor = e.target.checked; rerender(); });
   $('showWeekNums').addEventListener('change',     e => { state.showWeekNums     = e.target.checked; rerender(); });
   $('showHeader').addEventListener('change',       e => { state.showHeader       = e.target.checked; rerender(); });
@@ -329,6 +336,62 @@ export function renderHolidaysEditor() {
 
   const cal = RF_CALENDAR[state.year];
   if (!cal) return;
+
+  // Tatarstan section
+  if (state.tatarstan) {
+    const tCal = RT_CALENDAR[state.year];
+    if (tCal) {
+      const tHeader = document.createElement('div');
+      tHeader.className = 'rf-section-header';
+      tHeader.textContent = '🟢 Праздники Республики Татарстан';
+      container.appendChild(tHeader);
+
+      if (tCal.warning) {
+        const tw = document.createElement('div');
+        tw.className = 'rf-warning';
+        tw.textContent = '⚠ ' + tCal.warning;
+        container.appendChild(tw);
+      }
+
+      const tEntries = [
+        ...tCal.holidays.map(h => ({ ...h, type: 'holiday' })),
+        ...tCal.short.map(h => ({ ...h, type: 'short' })),
+      ].sort((a, b) => a.date.localeCompare(b.date));
+
+      tEntries.forEach(entry => {
+        const row = document.createElement('div');
+        row.className = 'rf-entry rf-entry--region';
+        const badge = document.createElement('span');
+        badge.className = 'rf-badge rf-badge--' + entry.type;
+        badge.textContent = entry.type === 'holiday' ? 'вых.' : 'сокр.';
+        const date = document.createElement('span');
+        date.className = 'rf-entry-date';
+        date.textContent = fmtDateShort(entry.date);
+        const name = document.createElement('span');
+        name.className = 'rf-entry-name';
+        name.textContent = entry.name;
+        const del = document.createElement('button');
+        del.className = 'event-del';
+        del.textContent = '×';
+        del.addEventListener('click', () => {
+          const year = parseInt(entry.date.split('-')[0], 10);
+          const arr  = entry.type === 'short' ? RT_CALENDAR[year].short : RT_CALENDAR[year].holidays;
+          const idx  = arr.findIndex(h => h.date === entry.date && h.name === entry.name);
+          if (idx !== -1) arr.splice(idx, 1);
+          rebuildSystemHolidays();
+          renderHolidaysEditor();
+          rerender();
+        });
+        row.append(badge, date, name, del);
+        container.appendChild(row);
+      });
+
+      const rfHeader = document.createElement('div');
+      rfHeader.className = 'rf-section-header';
+      rfHeader.textContent = '🔴 Федеральные праздники РФ';
+      container.appendChild(rfHeader);
+    }
+  }
 
   // Warning banner
   if (cal.warning) {
