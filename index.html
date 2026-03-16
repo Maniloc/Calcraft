@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CalCraft — Конструктор Календарей</title>
+  <meta name="description" content="Создайте красивый кастомный календарь с вашими мероприятиями и скачайте в PDF или PNG" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ───────────────────────── SIDEBAR ───────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-mark">◈</span>
+        <span class="logo-text">CalCraft</span>
+      </div>
+      <p class="logo-sub">Конструктор календарей</p>
+    </div>
+
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="content">Содержание</button>
+      <button class="tab-btn" data-tab="design">Дизайн</button>
+      <button class="tab-btn" data-tab="image">Обложка</button>
+    </nav>
+
+    <div class="sidebar-body">
+
+      <!-- ── TAB: CONTENT ── -->
+      <div class="tab-pane active" id="tab-content">
+
+        <div class="field-group">
+          <label class="field-label">Период</label>
+          <input type="month" id="monthPicker" class="field-input" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Заголовок</label>
+          <input type="text" id="calTitle" class="field-input" placeholder="Авто" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Подзаголовок</label>
+          <input type="text" id="calSubtitle" class="field-input" placeholder="Например: Команда дизайна" />
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field-group">
+          <label class="field-label">Выходные дни</label>
+          <div class="day-grid" id="dayToggles">
+            <button class="day-btn" data-day="1">Пн</button>
+            <button class="day-btn" data-day="2">Вт</button>
+            <button class="day-btn" data-day="3">Ср</button>
+            <button class="day-btn" data-day="4">Чт</button>
+            <button class="day-btn" data-day="5">Пт</button>
+            <button class="day-btn active" data-day="6">Сб</button>
+            <button class="day-btn active" data-day="0">Вс</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field-group">
+          <label class="field-label">Мероприятия</label>
+          <div id="eventList" class="event-list"></div>
+          <div class="event-add-row">
+            <input type="text" id="newEventName" class="field-input flex-1" placeholder="Название…" />
+            <input type="date" id="newEventDate" class="field-input w-date" />
+            <input type="color" id="newEventColor" class="color-dot-input" value="#3B5BDB" title="Цвет" />
+          </div>
+          <button class="btn-add" id="addEventBtn">+ Добавить</button>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Праздники</label>
+          <div id="holidayList" class="event-list"></div>
+          <div class="event-add-row">
+            <input type="text" id="newHolidayName" class="field-input flex-1" placeholder="Праздник…" />
+            <input type="date" id="newHolidayDate" class="field-input w-date" />
+          </div>
+          <button class="btn-add" id="addHolidayBtn">+ Добавить</button>
+        </div>
+
+      </div>
+
+      <!-- ── TAB: DESIGN ── -->
+      <div class="tab-pane" id="tab-design">
+
+        <div class="field-group">
+          <label class="field-label">Тема</label>
+          <div class="theme-grid" id="themeGrid">
+            <button class="theme-card active" data-theme="paper">
+              <span class="theme-preview" style="background:#F7F3EE;border:1px solid #E5DDD3"></span>
+              <span>Бумага</span>
+            </button>
+            <button class="theme-card" data-theme="noir">
+              <span class="theme-preview" style="background:#141414"></span>
+              <span>Noir</span>
+            </button>
+            <button class="theme-card" data-theme="slate">
+              <span class="theme-preview" style="background:#1E293B"></span>
+              <span>Slate</span>
+            </button>
+            <button class="theme-card" data-theme="sand">
+              <span class="theme-preview" style="background:#FDF6E3;border:1px solid #E8D5A3"></span>
+              <span>Песок</span>
+            </button>
+            <button class="theme-card" data-theme="mist">
+              <span class="theme-preview" style="background:#EEF2F7;border:1px solid #C9D6E3"></span>
+              <span>Туман</span>
+            </button>
+            <button class="theme-card" data-theme="forest">
+              <span class="theme-preview" style="background:#1A2E1A"></span>
+              <span>Лес</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Акцентный цвет</label>
+          <div class="accent-grid" id="accentGrid">
+            <button class="accent-btn active" data-color="#2B2D42" style="background:#2B2D42" title="Антрацит"></button>
+            <button class="accent-btn" data-color="#C0392B" style="background:#C0392B" title="Кармин"></button>
+            <button class="accent-btn" data-color="#3B5BDB" style="background:#3B5BDB" title="Индиго"></button>
+            <button class="accent-btn" data-color="#2D6A4F" style="background:#2D6A4F" title="Изумруд"></button>
+            <button class="accent-btn" data-color="#7B2D8B" style="background:#7B2D8B" title="Пурпур"></button>
+            <button class="accent-btn" data-color="#B5560F" style="background:#B5560F" title="Терракот"></button>
+            <input type="color" id="customAccent" class="accent-btn accent-custom" value="#2B2D42" title="Свой цвет" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Размер экспорта</label>
+          <div class="size-grid" id="sizeGrid">
+            <button class="size-btn active" data-size="a4p">A4 портрет</button>
+            <button class="size-btn" data-size="a4l">A4 альбом</button>
+            <button class="size-btn" data-size="a3p">A3 портрет</button>
+            <button class="size-btn" data-size="square">Квадрат</button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Показывать номера недель</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showWeekNumbers" />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Показывать легенду</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showLegend" checked />
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- ── TAB: IMAGE ── -->
+      <div class="tab-pane" id="tab-image">
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="imgInput" accept="image/*" />
+          <img id="uploadThumb" src="" alt="" />
+          <div class="upload-placeholder" id="uploadPlaceholder">
+            <span class="upload-icon">⬆</span>
+            <p>Нажмите или перетащите изображение</p>
+            <span class="upload-hint">PNG, JPG, WEBP до 10MB</span>
+          </div>
+        </div>
+
+        <div class="image-controls" id="imageControls" style="display:none">
+          <button class="btn-secondary" id="openCropBtn">✂ Выбрать область</button>
+          <button class="btn-ghost" id="removeImgBtn">Удалить</button>
+        </div>
+
+        <div class="field-group" id="imgHeightGroup" style="display:none">
+          <label class="field-label">Высота обложки <span id="imgHeightVal">220px</span></label>
+          <input type="range" id="imgHeightRange" min="100" max="500" value="220" class="range-input" />
+        </div>
+
+        <div class="field-group" id="imgFitGroup" style="display:none">
+          <label class="field-label">Заливка</label>
+          <div class="fit-grid">
+            <button class="fit-btn active" data-fit="cover">По ширине</button>
+            <button class="fit-btn" data-fit="contain">Целиком</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /sidebar-body -->
+
+    <!-- Export -->
+    <div class="sidebar-footer">
+      <button class="btn-export" id="exportPng">
+        <span class="btn-icon">↓</span> PNG
+      </button>
+      <button class="btn-export btn-export--pdf" id="exportPdf">
+        <span class="btn-icon">↓</span> PDF
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ───────────────────────── PREVIEW ───────────────────────── -->
+  <main class="preview-area">
+    <div class="preview-toolbar">
+      <span class="preview-label">Предпросмотр</span>
+      <span class="preview-size-info" id="previewSizeInfo">A4 портрет</span>
+    </div>
+
+    <div class="preview-stage" id="previewStage">
+      <div class="calendar-sheet" id="calendarSheet">
+
+        <!-- Image -->
+        <div class="sheet-image" id="sheetImage" style="display:none">
+          <img id="sheetImg" src="" alt="" />
+        </div>
+
+        <!-- Calendar body -->
+        <div class="sheet-body" id="sheetBody">
+          <header class="sheet-header">
+            <div class="sheet-header-left">
+              <h1 class="sheet-title" id="sheetTitle">Январь</h1>
+              <p class="sheet-subtitle" id="sheetSubtitle"></p>
+            </div>
+            <div class="sheet-year" id="sheetYear">2025</div>
+          </header>
+
+          <div class="cal-grid-wrap">
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+
+          <footer class="sheet-footer" id="sheetFooter">
+            <div class="legend" id="calLegend"></div>
+          </footer>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ───────────────────────── CROP MODAL ───────────────────────── -->
+  <div class="modal-backdrop" id="cropBackdrop">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 class="modal-title">Выбор области</h2>
+        <button class="modal-close" id="cropClose">✕</button>
+      </div>
+      <p class="modal-hint">Нарисуйте прямоугольник на изображении</p>
+
+      <div class="ratio-row">
+        <span class="ratio-label">Соотношение:</span>
+        <div class="ratio-btns">
+          <button class="ratio-btn active" data-ratio="0">Свободно</button>
+          <button class="ratio-btn" data-ratio="1.414">A4</button>
+          <button class="ratio-btn" data-ratio="1.777">16:9</button>
+          <button class="ratio-btn" data-ratio="1.333">4:3</button>
+          <button class="ratio-btn" data-ratio="1">1:1</button>
+        </div>
+      </div>
+
+      <div class="crop-canvas-wrap" id="cropWrap">
+        <img id="cropSrc" src="" alt="" />
+        <div class="crop-rect" id="cropRect"></div>
+      </div>
+      <p class="crop-dims" id="cropDims"></p>
+
+      <div class="modal-actions">
+        <button class="btn-primary" id="applyCrop">Применить</button>
+        <button class="btn-ghost" id="cancelCrop">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
