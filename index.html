@@ -424,6 +424,45 @@
     </div>
   </div>
 
+  <!-- Mobile bottom nav -->
+  <nav class="mobile-nav" id="mobileNav">
+    <button class="mobile-nav-btn active" data-panel="sidebar" id="mobileNavSettings">
+      <span class="mobile-nav-icon">⚙</span>
+      <span class="mobile-nav-label">Настройки</span>
+    </button>
+    <button class="mobile-nav-btn" data-panel="preview" id="mobileNavPreview">
+      <span class="mobile-nav-icon">👁</span>
+      <span class="mobile-nav-label">Превью</span>
+    </button>
+    <button class="mobile-nav-btn mobile-nav-export" id="mobileExportBtn">
+      <span class="mobile-nav-icon">↓</span>
+      <span class="mobile-nav-label">Скачать</span>
+    </button>
+  </nav>
+
+  <!-- Mobile export sheet -->
+  <div class="mobile-export-sheet" id="mobileExportSheet">
+    <div class="mobile-export-handle"></div>
+    <div class="mobile-export-options">
+      <button class="mobile-export-option" id="mobileExportPng">
+        <span class="mobile-export-icon">🖼</span>
+        <div>
+          <div class="mobile-export-title">PNG</div>
+          <div class="mobile-export-sub">Изображение высокого качества</div>
+        </div>
+      </button>
+      <button class="mobile-export-option" id="mobileExportPdf">
+        <span class="mobile-export-icon">📄</span>
+        <div>
+          <div class="mobile-export-title">PDF</div>
+          <div class="mobile-export-sub">Готов к печати</div>
+        </div>
+      </button>
+    </div>
+    <button class="mobile-export-cancel" id="mobileExportCancel">Отмена</button>
+  </div>
+  <div class="mobile-export-backdrop" id="mobileExportBackdrop"></div>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

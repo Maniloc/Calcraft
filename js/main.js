@@ -161,6 +161,7 @@ function bindAll() {
   bindImage();
   bindEvents();
   bindReset();
+  bindMobileNav();
 }
 
 // ── TABS ────────────────────────────────
@@ -476,3 +477,62 @@ function debounce(fn, ms) {
 }
 
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+// ── MOBILE NAV ───────────────────────────
+
+function bindMobileNav() {
+  const nav = document.getElementById('mobileNav');
+  if (!nav) return; // desktop
+
+  const sidebar     = document.querySelector('.sidebar');
+  const preview     = document.querySelector('.preview-area');
+  const btnSettings = document.getElementById('mobileNavSettings');
+  const btnPreview  = document.getElementById('mobileNavPreview');
+  const btnExport   = document.getElementById('mobileExportBtn');
+  const sheet       = document.getElementById('mobileExportSheet');
+  const backdrop    = document.getElementById('mobileExportBackdrop');
+  const cancelBtn   = document.getElementById('mobileExportCancel');
+
+  function showPanel(panel) {
+    if (panel === 'sidebar') {
+      sidebar.classList.remove('mobile-hidden');
+      preview.classList.remove('mobile-visible');
+      btnSettings.classList.add('active');
+      btnPreview.classList.remove('active');
+    } else {
+      sidebar.classList.add('mobile-hidden');
+      preview.classList.add('mobile-visible');
+      btnPreview.classList.add('active');
+      btnSettings.classList.remove('active');
+    }
+  }
+
+  btnSettings.addEventListener('click', () => showPanel('sidebar'));
+  btnPreview.addEventListener('click',  () => { showPanel('preview'); renderSheetSize(); });
+
+  // Export bottom sheet
+  function openSheet()  {
+    sheet.classList.add('open');
+    backdrop.classList.add('open');
+  }
+  function closeSheet() {
+    sheet.classList.remove('open');
+    backdrop.classList.remove('open');
+  }
+
+  btnExport.addEventListener('click', openSheet);
+  cancelBtn.addEventListener('click', closeSheet);
+  backdrop.addEventListener('click',  closeSheet);
+
+  document.getElementById('mobileExportPng').addEventListener('click', () => {
+    closeSheet();
+    document.getElementById('exportPng').click();
+  });
+  document.getElementById('mobileExportPdf').addEventListener('click', () => {
+    closeSheet();
+    document.getElementById('exportPdf').click();
+  });
+
+  // Init: sidebar visible by default on mobile
+  showPanel('sidebar');
+}
