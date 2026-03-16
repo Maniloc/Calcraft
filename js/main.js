@@ -166,6 +166,7 @@ function bindDesign() {
 
   $('showWeekendColor').addEventListener('change', e => { state.showWeekendColor = e.target.checked; rerender(); });
   $('showWeekNums').addEventListener('change',     e => { state.showWeekNums     = e.target.checked; rerender(); });
+  $('showHeader').addEventListener('change',       e => { state.showHeader       = e.target.checked; rerender(); });
 
   $('showWorkStats').addEventListener('change', e => {
     state.showWorkStats = e.target.checked;

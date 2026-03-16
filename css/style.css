@@ -712,3 +712,15 @@ body {
   font-size: 0.7rem !important;
 }
 .event-del--system:hover { color: var(--ink-300) !important; }
+
+/* ── LEGEND DATES ── */
+.legend-label {
+  color: var(--cal-text);
+  font-size: 0.6rem;
+}
+.legend-dates {
+  font-size: 0.57rem;
+  color: var(--cal-muted);
+  margin-left: 3px;
+}
+.legend-dates::before { content: '— '; }

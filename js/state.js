@@ -198,6 +198,7 @@ export const state = {
   layout:           '3x4',
   showWeekendColor: true,
   showWeekNums:     false,
+  showHeader:       true,   // показывать блок с годом/заголовком
   showWorkStats:    false,
   hoursPerDay:      8,
   weekends:         new Set([0, 6]),

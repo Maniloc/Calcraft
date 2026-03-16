@@ -101,6 +101,10 @@ export function renderCoverText() {
 // ── HEADER ──────────────────────────────
 
 export function renderHeader() {
+  const headerEl = document.getElementById('sheetHeader');
+  if (headerEl) {
+    headerEl.style.display = state.showHeader === false ? 'none' : '';
+  }
   setText('sheetYear',     state.year);
   setText('sheetTitle',    state.title);
   setText('sheetSubtitle', state.subtitle);
@@ -127,28 +131,50 @@ export function renderLegend() {
   const footer = document.getElementById('sheetFooter');
   if (!footer) return;
 
-  // Collect unique holidays for this year (system + user)
-  const evMap = buildEventMap();
   const seen  = new Set();
   const items = [];
 
-  // Weekend label
+  // Выходные дни
   if (state.weekends.size > 0) {
-    items.push({ color: state.accent, label: 'Выходной день' });
+    items.push({ isWeekend: true, label: 'Выходной день', dates: '' });
   }
 
-  // Holidays — unique by name
+  // Праздники — группируем по имени, собираем все даты за год
   for (const ev of state.events) {
     if (ev.type !== 'holiday') continue;
-    if (seen.has(ev.name)) continue;
-    seen.add(ev.name);
-    items.push({ color: ev.color, label: ev.name });
+    const key = ev.name;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    // Собираем все даты этого праздника в текущем году
+    const allDates = state.events
+      .filter(e => e.type === 'holiday' && e.name === ev.name)
+      .map(e => {
+        let d = e.date;
+        if (e.repeat) {
+          const [, m, day] = e.date.split('-');
+          d = `${state.year}-${m}-${day}`;
+        }
+        return d;
+      })
+      .filter(d => d.startsWith(String(state.year)))
+      .sort()
+      .map(d => { const [,m,day] = d.split('-'); return `${+day}.${+m}`; });
+
+    items.push({
+      isWeekend: false,
+      label:     ev.name,
+      dates:     allDates.join(', '),
+    });
   }
 
-  // Short days
-  const hasShort = state.events.some(e => e.type === 'short');
-  if (hasShort) {
-    items.push({ color: '#E67E22', label: 'Сокращённый рабочий день (−1ч)' });
+  // Предпраздничные сокращённые дни
+  const shortEvs = state.events.filter(e => e.type === 'short');
+  if (shortEvs.length > 0) {
+    const shortDates = shortEvs
+      .map(e => { const [,m,d] = e.date.split('-'); return `${+d}.${+m}`; })
+      .join(', ');
+    items.push({ isShort: true, label: 'Сокращённый день (−1ч)', dates: shortDates });
   }
 
   if (items.length === 0) {
@@ -162,11 +188,28 @@ export function renderLegend() {
 
   items.forEach(item => {
     const row = el('div', 'legend-item');
-    const dot = el('div', 'legend-swatch');
-    dot.style.background = item.color;
-    const txt = document.createElement('span');
+
+    const swatch = el('div', 'legend-swatch');
+    if (item.isWeekend) {
+      swatch.style.background = state.accent;
+    } else if (item.isShort) {
+      swatch.style.background = '#E67E22';
+    } else {
+      // Праздник — такой же цвет как выходные
+      swatch.style.background = state.accent;
+    }
+
+    const txt = el('span', 'legend-label');
     txt.textContent = item.label;
-    row.append(dot, txt);
+
+    row.append(swatch, txt);
+
+    if (item.dates) {
+      const datesTxt = el('span', 'legend-dates');
+      datesTxt.textContent = item.dates;
+      row.appendChild(datesTxt);
+    }
+
     legend.appendChild(row);
   });
 }

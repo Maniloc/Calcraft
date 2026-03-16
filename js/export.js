@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════
 // export.js — PNG & PDF via html2canvas
-// Fixes: inline CSS vars before capture
 // ═══════════════════════════════════════
 
 import { state, SIZES } from './state.js';
@@ -35,21 +34,12 @@ async function capture() {
   const sheet = document.getElementById('calSheet');
   const size  = SIZES[state.size];
 
-  // 1. Resolve all CSS custom properties on the sheet and children
-  //    html2canvas can't read CSS vars — we must flatten them to real values
-  inlineCssVars(sheet);
+  // --- Prepare export clone (never touch the live DOM) ---
 
-  // 2. Fix cover image height in export pixels
-  const cover = document.getElementById('sheetCover');
-  if (state.image && cover) {
-    const coverPx = Math.round(size.h * state.imgHeightPct / 100);
-    cover.style.height = coverPx + 'px';
-    applyExportCrop(coverPx);
-  }
-
-  // 3. Move sheet off-screen at exact export dimensions
-  const prevStyle = sheet.getAttribute('style') || '';
-  Object.assign(sheet.style, {
+  // 1. Deep clone the sheet
+  const clone = sheet.cloneNode(true);
+  clone.style.cssText = '';
+  Object.assign(clone.style, {
     width:        size.w + 'px',
     maxWidth:     size.w + 'px',
     position:     'fixed',
@@ -59,92 +49,79 @@ async function capture() {
     boxShadow:    'none',
     transform:    'none',
     animation:    'none',
+    zIndex:       '-1',
   });
 
-  await sleep(150);
+  // 2. Copy computed styles to every element in clone
+  //    so html2canvas sees real colors even without CSS cascade
+  const liveEls  = [sheet, ...sheet.querySelectorAll('*')];
+  const cloneEls = [clone, ...clone.querySelectorAll('*')];
 
-  const canvas = await html2canvas(sheet, {
+  // Save inline styles of live elements to restore after export
+  const savedStyles = liveEls.map(el => el.getAttribute('style') || '');
+
+  liveEls.forEach((el, i) => {
+    const cs  = getComputedStyle(el);
+    const cel = cloneEls[i];
+    if (!(cel instanceof HTMLElement)) return;
+
+    cel.style.color           = cs.color;
+    cel.style.backgroundColor = cs.backgroundColor;
+    cel.style.borderColor     = cs.borderColor;
+    cel.style.fontFamily      = cs.fontFamily;
+    cel.style.fontSize        = cs.fontSize;
+    cel.style.fontWeight      = cs.fontWeight;
+    cel.style.fontStyle       = cs.fontStyle;
+  });
+
+  // 3. Fix cover image in clone
+  const cloneCover = clone.querySelector('#sheetCover');
+  const cloneImg   = clone.querySelector('#coverImg');
+  if (state.image && cloneCover && cloneImg) {
+    const coverPx = Math.round(size.h * state.imgHeightPct / 100);
+    cloneCover.style.height = coverPx + 'px';
+    cloneImg.src = state.image;
+
+    if (state.cropRect) {
+      const { rx, ry, rw, rh } = state.cropRect;
+      cloneImg.style.width      = (100 / rw) + '%';
+      cloneImg.style.height     = (coverPx / rh) + 'px';
+      cloneImg.style.objectFit  = 'none';
+      cloneImg.style.marginLeft = (-rx / rw * 100) + '%';
+      cloneImg.style.marginTop  = (-ry * coverPx / rh) + 'px';
+      cloneImg.style.maxWidth   = 'none';
+    } else {
+      cloneImg.style.width          = '100%';
+      cloneImg.style.height         = '100%';
+      cloneImg.style.objectFit      = state.imgFit || 'cover';
+      cloneImg.style.objectPosition = 'center';
+    }
+  }
+
+  // 4. Append clone, render, remove — live DOM untouched
+  document.body.appendChild(clone);
+  await sleep(120);
+
+  const bgColor = getComputedStyle(sheet).backgroundColor || '#ffffff';
+  const canvas  = await html2canvas(clone, {
     scale:           2,
     useCORS:         true,
     allowTaint:      true,
-    backgroundColor: resolveVar('--cal-bg', sheet) || '#ffffff',
+    backgroundColor: bgColor,
     logging:         false,
     width:           size.w,
     windowWidth:     size.w,
-    onclone: (doc) => {
-      // Also inline vars in the cloned document
-      const clonedSheet = doc.getElementById('calSheet');
-      if (clonedSheet) inlineCssVars(clonedSheet);
-    },
   });
 
-  // Restore original style
-  sheet.setAttribute('style', prevStyle);
+  clone.remove();
 
   return canvas;
-}
-
-// ── INLINE CSS VARS ──────────────────────
-// html2canvas doesn't process CSS custom properties.
-// We walk every element and replace var(--x) values with computed values.
-
-function inlineCssVars(root) {
-  const computed = getComputedStyle(document.documentElement);
-  const sheet    = document.getElementById('calSheet');
-  const sheetCs  = getComputedStyle(sheet);
-
-  // Properties that use CSS vars in our stylesheet
-  const PROPS = [
-    'color', 'background', 'background-color', 'border-color',
-    'border-top-color', 'border-bottom-color', 'border-left-color', 'border-right-color',
-  ];
-
-  // Resolve a var() reference
-  function resolveValue(el, prop) {
-    const cs  = getComputedStyle(el);
-    return cs.getPropertyValue(prop);
-  }
-
-  // Walk all elements under root
-  const all = [root, ...root.querySelectorAll('*')];
-  all.forEach(el => {
-    if (!(el instanceof HTMLElement)) return;
-    const cs = getComputedStyle(el);
-    PROPS.forEach(prop => {
-      const val = cs.getPropertyValue(prop);
-      if (val && val.trim()) {
-        el.style.setProperty(prop, val.trim());
-      }
-    });
-    // Also set font explicitly (html2canvas needs it)
-    el.style.fontFamily = cs.fontFamily;
-    el.style.fontSize   = cs.fontSize;
-    el.style.fontWeight = cs.fontWeight;
-    el.style.color      = cs.color;
-  });
-}
-
-function resolveVar(varName, el) {
-  return getComputedStyle(el || document.documentElement)
-    .getPropertyValue(varName).trim();
-}
-
-function applyExportCrop(coverPx) {
-  if (!state.cropRect) return;
-  const img = document.getElementById('coverImg');
-  const { rx, ry, rw, rh } = state.cropRect;
-  img.style.width      = (100 / rw) + '%';
-  img.style.height     = (coverPx / rh) + 'px';
-  img.style.objectFit  = 'none';
-  img.style.marginLeft = (-rx / rw * 100) + '%';
-  img.style.marginTop  = (-ry * coverPx / rh) + 'px';
-  img.style.maxWidth   = 'none';
 }
 
 // ── SAVE HELPERS ────────────────────────
 
 function savePng(canvas) {
-  const a = document.createElement('a');
+  const a    = document.createElement('a');
   a.href     = canvas.toDataURL('image/png', 1.0);
   a.download = makeFilename('png');
   a.click();
