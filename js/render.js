@@ -88,48 +88,58 @@ export function renderCover() {
     return;
   }
 
-  cover.style.display   = 'block';
-  cover.style.overflow  = 'hidden';
-  cover.style.position  = 'relative';
-  // Высота = % от ширины самого листа (padding-bottom trick обеспечивает
-  // одинаковое соотношение и в превью и при экспорте)
+  cover.style.display      = 'block';
+  cover.style.overflow     = 'hidden';
+  cover.style.position     = 'relative';
   cover.style.height       = '0';
   cover.style.paddingBottom = state.imgHeightPct + '%';
 
   const img = $('coverImg');
   img.src = state.image;
 
-  // Картинка абсолютно позиционирована внутри cover
+  // Всегда абсолютное позиционирование в cover
   img.style.position = 'absolute';
-  img.style.top      = '0';
-  img.style.left     = '0';
+  img.style.inset    = '0';
 
   if (state.cropRect) {
+    // Кроп: показываем фрагмент изображения, выбранный в кроппере.
+    // cropRect хранит доли натурального изображения: rx,ry — начало, rw,rh — размер выделения.
+    // Стратегия: растягиваем изображение так чтобы выделенная область
+    // совпала с размерами cover, затем сдвигаем его на нужное смещение.
+    //
+    // cover имеет размер W × H (в пикселях).
+    // Нам нужно чтобы фрагмент [rx*natW .. (rx+rw)*natW] × [ry*natH .. (ry+rh)*natH]
+    // заполнял cover полностью.
+    //
+    // Масштаб: imgDisplayW = W / rw (в % от cover: 100/rw %)
+    //          imgDisplayH = H / rh (но H зависит от img aspect ratio)
+    // Используем object-fit:none + object-position для точного управления.
+    // object-position задаёт смещение в пикселях: -(rx*natW * scale), -(ry*natH * scale)
+    // Но scale неизвестен без layout. Поэтому используем background-image подход
+    // на самом cover — это самый надёжный способ:
     const { rx, ry, rw, rh } = state.cropRect;
-    // Ширина и высота изображения масштабируются относительно cover
-    img.style.width          = (100 / rw) + '%';
-    img.style.height         = (100 / rh) + '%';
-    img.style.objectFit      = 'none';
-    img.style.objectPosition = '';
-    img.style.marginLeft     = (-rx / rw * 100) + '%';
-    img.style.marginTop      = (-ry / rh * 100) + '%';
-    img.style.maxWidth       = 'none';
-  } else if (state.imgFit === 'fill') {
-    img.style.width          = '100%';
-    img.style.height         = '100%';
-    img.style.objectFit      = 'fill';
-    img.style.objectPosition = 'center';
-    img.style.marginLeft     = '';
-    img.style.marginTop      = '';
-    img.style.maxWidth       = '';
+
+    // Вместо <img> используем background на cover для кропа
+    cover.style.backgroundImage    = `url('${state.image}')`;
+    cover.style.backgroundSize     = `${(100 / rw).toFixed(4)}% ${(100 / rh).toFixed(4)}%`;
+    cover.style.backgroundPosition = `${(-rx / rw * 100).toFixed(4)}% ${(-ry / rh * 100).toFixed(4)}%`;
+    cover.style.backgroundRepeat   = 'no-repeat';
+
+    // Скрываем <img> — кроп через background
+    img.style.display = 'none';
   } else {
-    img.style.width          = '100%';
-    img.style.height         = '100%';
-    img.style.objectFit      = 'cover';
+    // Нет кропа — показываем <img> обычным способом
+    cover.style.backgroundImage = '';
+    cover.style.backgroundSize  = '';
+    cover.style.backgroundPosition = '';
+    img.style.display    = 'block';
+    img.style.width      = '100%';
+    img.style.height     = '100%';
+    img.style.objectFit  = state.imgFit === 'fill' ? 'fill' : 'cover';
     img.style.objectPosition = 'center';
-    img.style.marginLeft     = '';
-    img.style.marginTop      = '';
-    img.style.maxWidth       = '';
+    img.style.marginLeft = '';
+    img.style.marginTop  = '';
+    img.style.maxWidth   = '';
   }
 
   renderCoverText();

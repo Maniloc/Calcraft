@@ -53,41 +53,34 @@ async function capture() {
     visibility:   'hidden',
   });
 
-  // Fix cover image in clone
-  // Uses same padding-bottom % trick as renderCover() — guarantees
-  // identical crop geometry in preview and export
+  // Fix cover in clone — mirrors renderCover() logic exactly
   const cloneCover = clone.querySelector('#sheetCover');
   const cloneImg   = clone.querySelector('#coverImg');
-  if (state.image && cloneCover && cloneImg) {
-    cloneCover.style.display      = 'block';
-    cloneCover.style.overflow     = 'hidden';
-    cloneCover.style.position     = 'relative';
-    cloneCover.style.height       = '0';
+  if (state.image && cloneCover) {
+    cloneCover.style.display       = 'block';
+    cloneCover.style.overflow      = 'hidden';
+    cloneCover.style.position      = 'relative';
+    cloneCover.style.height        = '0';
     cloneCover.style.paddingBottom = state.imgHeightPct + '%';
-    cloneImg.src = state.image;
-
-    // Position image absolutely inside cover
-    cloneImg.style.position = 'absolute';
-    cloneImg.style.top      = '0';
-    cloneImg.style.left     = '0';
 
     if (state.cropRect) {
+      // Use background-image crop — same as renderCover()
       const { rx, ry, rw, rh } = state.cropRect;
-      cloneImg.style.width         = (100 / rw) + '%';
-      cloneImg.style.height        = (100 / rh) + '%';
-      cloneImg.style.objectFit     = 'none';
-      cloneImg.style.objectPosition = '';
-      cloneImg.style.marginLeft    = (-rx / rw * 100) + '%';
-      cloneImg.style.marginTop     = (-ry / rh * 100) + '%';
-      cloneImg.style.maxWidth      = 'none';
-    } else {
-      cloneImg.style.width          = '100%';
-      cloneImg.style.height         = '100%';
-      cloneImg.style.objectFit      = state.imgFit || 'cover';
+      cloneCover.style.backgroundImage    = `url('${state.image}')`;
+      cloneCover.style.backgroundSize     = `${(100/rw).toFixed(4)}% ${(100/rh).toFixed(4)}%`;
+      cloneCover.style.backgroundPosition = `${(-rx/rw*100).toFixed(4)}% ${(-ry/rh*100).toFixed(4)}%`;
+      cloneCover.style.backgroundRepeat   = 'no-repeat';
+      if (cloneImg) cloneImg.style.display = 'none';
+    } else if (cloneImg) {
+      cloneCover.style.backgroundImage = '';
+      cloneImg.style.display    = 'block';
+      cloneImg.style.position   = 'absolute';
+      cloneImg.style.inset      = '0';
+      cloneImg.style.width      = '100%';
+      cloneImg.style.height     = '100%';
+      cloneImg.style.objectFit  = state.imgFit === 'fill' ? 'fill' : 'cover';
       cloneImg.style.objectPosition = 'center';
-      cloneImg.style.marginLeft     = '';
-      cloneImg.style.marginTop      = '';
-      cloneImg.style.maxWidth       = '';
+      cloneImg.src = state.image;
     }
   }
 
@@ -99,8 +92,10 @@ async function capture() {
 
   // Now flatten computed styles — iterate clone elements directly
   const STYLE_PROPS = [
-    'color', 'backgroundColor', 'borderColor',
-    'borderTopColor', 'borderBottomColor', 'borderLeftColor', 'borderRightColor',
+    'color', 'backgroundColor', 'backgroundImage', 'backgroundSize',
+    'backgroundPosition', 'backgroundRepeat',
+    'borderColor', 'borderTopColor', 'borderBottomColor',
+    'borderLeftColor', 'borderRightColor',
     'fontFamily', 'fontSize', 'fontWeight', 'fontStyle',
   ];
 
