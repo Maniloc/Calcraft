@@ -16,6 +16,32 @@ export const SIZES = {
   square: { w: 1200, h: 1200, label: 'Квадрат' },
 };
 
+// ── Российские федеральные праздники (ТК РФ, ст. 112) ──
+// repeat:true — работают каждый год; тип 'holiday' — влияют на рабочие дни
+const RU_HOLIDAYS = [
+  { m:'01', d:'01', name:'Новый год'                      },
+  { m:'01', d:'02', name:'Новый год'                      },
+  { m:'01', d:'03', name:'Новый год'                      },
+  { m:'01', d:'04', name:'Новый год'                      },
+  { m:'01', d:'05', name:'Новый год'                      },
+  { m:'01', d:'06', name:'Новый год'                      },
+  { m:'01', d:'07', name:'Рождество Христово'             },
+  { m:'01', d:'08', name:'Новый год'                      },
+  { m:'02', d:'23', name:'День защитника Отечества'       },
+  { m:'03', d:'08', name:'Международный женский день'     },
+  { m:'05', d:'01', name:'Праздник Весны и Труда'         },
+  { m:'05', d:'09', name:'День Победы'                    },
+  { m:'06', d:'12', name:'День России'                    },
+  { m:'11', d:'04', name:'День народного единства'        },
+].map((h, i) => ({
+  id:     -(i + 1),          // отрицательные id — системные, не удаляются случайно
+  name:   h.name,
+  date:   `2000-${h.m}-${h.d}`,  // год неважен, repeat:true подставит текущий
+  color:  '#C0392B',
+  repeat: true,
+  type:   'holiday',
+}));
+
 export const state = {
   // Основное
   year:     new Date().getFullYear(),
@@ -36,20 +62,18 @@ export const state = {
   weekends: new Set([0, 6]),
 
   // Обложка
-  image:        null,    // base64
-  cropRect:     null,    // { rx,ry,rw,rh } — доли 0..1
-  imgHeightPct: 38,      // % высоты листа
-  imgFit:       'cover', // 'cover' | 'fill'
+  image:        null,
+  cropRect:     null,
+  imgHeightPct: 38,
+  imgFit:       'cover',
 
   // Текст на обложке
-  coverText:          '',
-  coverTextSize:      32,       // px в превью
-  coverTextColor:     '#FFFFFF',
-  coverTextPosition:  'center', // 'top-left'|'top-center'|'top-right'|'center'|'bottom-left'|'bottom-center'|'bottom-right'
+  coverText:         '',
+  coverTextSize:     32,
+  coverTextColor:    '#FFFFFF',
+  coverTextPosition: 'center',
 
-  // События
-  // type: 'holiday' — праздник (влияет на рабочие дни если isWorkday=false)
-  // type: 'event'   — событие (точка, не влияет на рабочие дни)
+  // События: российские праздники предзаполнены
   /** @type {{ id:number, name:string, date:string, color:string, repeat:boolean, type:'holiday'|'event' }[]} */
-  events: [],
+  events: [...RU_HOLIDAYS],
 };

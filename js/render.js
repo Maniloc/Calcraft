@@ -225,7 +225,7 @@ function makeMonth(monthIdx, evMap, today) {
       grid.appendChild(wn);
     }
 
-    if (!isWE) workDays++;
+    if (!isWE && !isHol) workDays++;
 
     const classes = ['mini-cell'];
     if (isWE)  classes.push('is-weekend');
