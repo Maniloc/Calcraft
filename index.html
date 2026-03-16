@@ -30,7 +30,6 @@
       <button class="tab-btn" data-tab="design">Дизайн</button>
       <button class="tab-btn" data-tab="image">Обложка</button>
       <button class="tab-btn" data-tab="events">События</button>
-      <button class="tab-btn" data-tab="rfhol">Праздники РФ</button>
     </nav>
 
     <div class="sidebar-body">
@@ -289,31 +288,6 @@
             </div>
           </div>
           <button class="btn-add" id="addEventBtn">+ Добавить</button>
-        </div>
-
-      </div>
-
-      <!-- TAB: RF HOLIDAYS EDITOR -->
-      <div class="tab-pane" id="tab-rfhol">
-
-        <div class="field-group">
-          <label class="field-label">Год: <span id="rfHolYear"></span></label>
-          <p class="tip">Редактируйте список праздников для каждого года. Изменения применяются немедленно.</p>
-        </div>
-
-        <div id="rfHolidaysList" class="rf-list"></div>
-
-        <div class="divider"></div>
-
-        <div class="field-group">
-          <label class="field-label">Добавить запись</label>
-          <input type="text" id="rfHolName" class="field-input" placeholder="Название праздника…" />
-          <input type="date" id="rfHolDate" class="field-input" style="margin-top:6px" />
-          <div class="event-type-row" style="margin-top:6px">
-            <button class="rf-type-btn active" data-type="holiday">🔴 Нерабочий</button>
-            <button class="rf-type-btn" data-type="short">🟠 Сокращённый</button>
-          </div>
-          <button class="btn-add" id="addHolidayRfBtn" style="margin-top:8px">+ Добавить</button>
         </div>
 
       </div>

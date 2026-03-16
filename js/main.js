@@ -2,7 +2,7 @@
 // main.js — Entry point
 // ═══════════════════════════════════════
 
-import { state, buildHolidaysForYear, buildTatarHolidaysForYear, RF_CALENDAR, RT_CALENDAR, SUPPORTED_YEARS } from './state.js';
+import { state, buildHolidaysForYear, buildTatarHolidaysForYear, RF_CALENDAR, SUPPORTED_YEARS } from './state.js';
 import { render, renderEventList, renderCoverText, renderLegend, syncImageUI, applyTheme } from './render.js';
 import { initCrop } from './crop.js';
 import { initExport } from './export.js';
@@ -69,7 +69,6 @@ function bindAll() {
   bindDesign();
   bindImage();
   bindEvents();
-  bindHolidaysEditor();
 }
 
 // ── TABS ────────────────────────────────
