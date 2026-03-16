@@ -123,6 +123,54 @@ export function renderMonths() {
 
 // ── EVENT LIST ──────────────────────────
 
+export function renderLegend() {
+  const footer = document.getElementById('sheetFooter');
+  if (!footer) return;
+
+  // Collect unique holidays for this year (system + user)
+  const evMap = buildEventMap();
+  const seen  = new Set();
+  const items = [];
+
+  // Weekend label
+  if (state.weekends.size > 0) {
+    items.push({ color: state.accent, label: 'Выходной день' });
+  }
+
+  // Holidays — unique by name
+  for (const ev of state.events) {
+    if (ev.type !== 'holiday') continue;
+    if (seen.has(ev.name)) continue;
+    seen.add(ev.name);
+    items.push({ color: ev.color, label: ev.name });
+  }
+
+  // Short days
+  const hasShort = state.events.some(e => e.type === 'short');
+  if (hasShort) {
+    items.push({ color: '#E67E22', label: 'Сокращённый рабочий день (−1ч)' });
+  }
+
+  if (items.length === 0) {
+    footer.style.display = 'none';
+    return;
+  }
+
+  footer.style.display = '';
+  const legend = document.getElementById('calLegend');
+  legend.innerHTML = '';
+
+  items.forEach(item => {
+    const row = el('div', 'legend-item');
+    const dot = el('div', 'legend-swatch');
+    dot.style.background = item.color;
+    const txt = document.createElement('span');
+    txt.textContent = item.label;
+    row.append(dot, txt);
+    legend.appendChild(row);
+  });
+}
+
 export function renderEventList(onDelete) {
   const list = $('eventList');
   list.innerHTML = '';
@@ -227,13 +275,17 @@ function makeMonth(monthIdx, evMap, today) {
 
     if (!isWE && !isHol) workDays++;
 
+    const isShort = evs.some(e => e.type === 'short');
+
     const classes = ['mini-cell'];
-    if (isWE)  classes.push('is-weekend');
-    if (isHol) classes.push('is-holiday');
-    if (hasEv) classes.push('has-event');
+    if (isWE)    classes.push('is-weekend');
+    if (isHol)   classes.push('is-holiday');
+    if (isShort) classes.push('is-short');
+    if (hasEv)   classes.push('has-event');
 
     const cell = el('div', classes.join(' '));
-    cell.textContent = d;
+    // Предпраздничный: добавляем * после числа
+    cell.textContent = isShort ? d + '*' : d;
 
     const ev = evs.find(e => e.type === 'event');
     if (ev) cell.style.setProperty('--event-color', ev.color);
@@ -268,7 +320,7 @@ function buildEventMap() {
       key = `${state.year}-${m}-${d}`;
     }
     if (!map[key]) map[key] = [];
-    map[key].push({ name: ev.name, color: ev.color, type: ev.type });
+    map[key].push({ name: ev.name, color: ev.color, type: ev.type || 'holiday' });
   }
   return map;
 }

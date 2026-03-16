@@ -2,8 +2,8 @@
 // main.js — Entry point
 // ═══════════════════════════════════════
 
-import { state } from './state.js';
-import { render, renderEventList, renderCoverText, syncImageUI, applyTheme } from './render.js';
+import { render, renderEventList, renderCoverText, renderLegend, syncImageUI, applyTheme } from './render.js';
+import { state, buildHolidaysForYear } from './state.js';
 import { initCrop } from './crop.js';
 import { initExport } from './export.js';
 
@@ -41,11 +41,13 @@ function bindContent() {
   $('yearPrev').addEventListener('click', () => {
     state.year--;
     $('yearDisplay').textContent = state.year;
+    rebuildSystemHolidays();
     rerender();
   });
   $('yearNext').addEventListener('click', () => {
     state.year++;
     $('yearDisplay').textContent = state.year;
+    rebuildSystemHolidays();
     rerender();
   });
 
@@ -244,10 +246,19 @@ function addEvent() {
 
 function rerender() {
   render();
+  renderLegend();
   renderEventList(id => {
+    // Only allow deleting non-system events
     state.events = state.events.filter(e => e.id !== id);
     rerender();
   });
+}
+
+// Replaces system holidays for new year while keeping user events
+function rebuildSystemHolidays() {
+  const userEvents   = state.events.filter(e => !e.system);
+  const sysHolidays  = buildHolidaysForYear(state.year);
+  state.events = [...sysHolidays, ...userEvents];
 }
 
 function setAccent(color) {
