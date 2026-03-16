@@ -16,9 +16,21 @@ export function render() {
 export function applyTheme() {
   const sheet = $('calSheet');
   sheet.dataset.theme = state.theme;
+
   // --cal-accent controls calendar colours only — UI buttons stay with fixed --accent
   setCssVar('--cal-accent',       state.accent);
   setCssVar('--cal-accent-light', hexAlpha(state.accent, 0.10));
+  setCssVar('--cal-today-bg',     hexAlpha(state.accent, 0.08));
+
+  // Precompute cell backgrounds as plain rgba (no color-mix — html2canvas compat)
+  // These are set on :root so they cascade into .cal-sheet
+  const weekendBg = hexAlpha(state.accent, 0.12);
+  const holidayBg = hexAlpha(state.accent, 0.20);
+  const holWeBg   = hexAlpha(state.accent, 0.25);
+  setCssVar('--weekend-cell-bg',  weekendBg);
+  setCssVar('--holiday-cell-bg',  holidayBg);
+  setCssVar('--holiday-we-cell-bg', holWeBg);
+
   sheet.style.setProperty(
     '--cal-weekend',
     state.showWeekendColor ? state.accent : 'var(--cal-muted)'

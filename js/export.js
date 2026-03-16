@@ -104,7 +104,14 @@ async function capture() {
     if (!(liveEl instanceof HTMLElement) || !(cloneEl instanceof HTMLElement)) continue;
     const cs = getComputedStyle(liveEl);
     STYLE_PROPS.forEach(prop => {
-      cloneEl.style[prop] = cs[prop];
+      const val = cs[prop];
+      // html2canvas не поддерживает color-mix() — пропускаем, уже резолвлено браузером в rgb()
+      if (val && !val.includes('color-mix') && !val.includes('var(')) {
+        cloneEl.style[prop] = val;
+      } else if (val && (val.includes('color-mix') || val.includes('var('))) {
+        // Принудительно пересчитываем через временный элемент
+        cloneEl.style[prop] = resolveColor(liveEl, prop);
+      }
     });
   }
 
@@ -152,6 +159,30 @@ function makeFilename(ext) {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'calendar';
   return `${base}-${state.year}.${ext}`;
+}
+
+// Resolve any CSS value (including color-mix, var) to a plain rgb() string
+function resolveColor(el, prop) {
+  try {
+    const cs  = getComputedStyle(el);
+    const val = cs[prop];
+    // If browser already resolved it to rgb/rgba — use directly
+    if (!val || val === 'transparent' || val.startsWith('rgb')) return val;
+    // Otherwise create a temp element to force resolution
+    const tmp = document.createElement('div');
+    tmp.style.cssText = `${cssProp(prop)}:${val};position:absolute;visibility:hidden`;
+    document.body.appendChild(tmp);
+    const resolved = getComputedStyle(tmp)[prop];
+    tmp.remove();
+    return resolved || val;
+  } catch (e) {
+    return '';
+  }
+}
+
+// Convert camelCase to kebab-case for style attribute
+function cssProp(camel) {
+  return camel.replace(/([A-Z])/g, m => '-' + m.toLowerCase());
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

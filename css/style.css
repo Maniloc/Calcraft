@@ -16,10 +16,10 @@
   --ink-50:  #F7F5F2;
   /* UI accent — фиксированный, не меняется при выборе цвета календаря */
   --accent: #2B2D42;
-  --accent-light: color-mix(in srgb, var(--accent) 10%, white);
+  --accent-light: rgba(43,45,66,0.10);
   /* Calendar accent — задаётся JS из пикера цвета */
   --cal-accent: #2B2D42;
-  --cal-accent-light: color-mix(in srgb, var(--cal-accent) 10%, white);
+  --cal-accent-light: rgba(43,45,66,0.10);
   /* Calendar */
   --cal-bg: #FFFFFF;
   --cal-text: #1A1814;
@@ -27,7 +27,7 @@
   --cal-border: #EBEBEB;
   --cal-cell-bg: #FFFFFF;
   --cal-weekend: var(--cal-accent);
-  --cal-today-bg: color-mix(in srgb, var(--cal-accent) 8%, white);
+  --cal-today-bg: rgba(43,45,66,0.08);
   /* Layout */
   --r-sm: 4px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
   --shadow-md: 0 4px 24px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.05);
@@ -416,7 +416,7 @@ body {
 
 /* Выходной день — цветной фон + жирный текст */
 .mini-cell.is-weekend {
-  background: color-mix(in srgb, var(--cal-accent) 12%, var(--cal-cell-bg));
+  background: var(--weekend-cell-bg, rgba(43,45,66,0.12));
   color: var(--cal-weekend);
   font-weight: 700;
   border-radius: 3px;
@@ -424,7 +424,7 @@ body {
 
 /* Праздник — более насыщенный фон */
 .mini-cell.is-holiday {
-  background: color-mix(in srgb, var(--cal-accent) 20%, var(--cal-cell-bg));
+  background: var(--holiday-cell-bg, rgba(43,45,66,0.20));
   color: var(--cal-weekend);
   font-weight: 800;
   border-radius: 3px;
@@ -432,7 +432,7 @@ body {
 
 /* Если праздник совпал с выходным — ещё насыщеннее */
 .mini-cell.is-weekend.is-holiday {
-  background: color-mix(in srgb, var(--cal-accent) 25%, var(--cal-cell-bg));
+  background: var(--holiday-we-cell-bg, rgba(43,45,66,0.25));
 }
 
 .mini-cell.has-event::after {
@@ -615,8 +615,8 @@ body {
   font-size: 0.58rem; font-weight: 600; padding: 1px 4px;
   border-radius: 3px; flex-shrink: 0; letter-spacing: 0.04em;
 }
-.event-badge--holiday { background: color-mix(in srgb, #C0392B 12%, white); color: #C0392B; }
-.event-badge--event   { background: color-mix(in srgb, #3B5BDB 12%, white); color: #3B5BDB; }
+.event-badge--holiday { background: #f7e7e6; color: #C0392B; }
+.event-badge--event   { background: #e7ebfb; color: #3B5BDB; }
 
 /* ── WEEK NUMBERS ── */
 .mini-wn-header {
