@@ -395,6 +395,7 @@ export const state = {
   coverTextSize:    32,
   coverTextColor:   '#FFFFFF',
   coverTextPosition: 'center',
+  footer:           '@Maniloc',  // колонтитул
   tatarstan:        false,
   events:           [],
 };

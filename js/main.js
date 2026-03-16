@@ -92,6 +92,7 @@ function syncCheckboxes() {
   // Cover text
   document.getElementById('coverText').value      = state.coverText || '';
   document.getElementById('calTitle').value       = state.title     || '';
+  const fi = document.getElementById('calFooter'); if (fi) fi.value = state.footer || '';
   document.getElementById('calSubtitle').value    = state.subtitle  || '';
   document.getElementById('imgHeightRange').value = state.imgHeightPct;
   document.getElementById('imgHeightVal').textContent = state.imgHeightPct + '%';
@@ -230,6 +231,14 @@ function bindContent() {
       mark();
     });
   });
+
+  // Footer
+  const footerInput = document.getElementById('calFooter');
+  if (footerInput) {
+    footerInput.value = state.footer || '';
+    footerInput.addEventListener('input',
+      debounce(e => { state.footer = e.target.value; renderHeaderOnly(); mark(); }, 150));
+  }
 
   document.getElementById('showWeekendColor').addEventListener('change', e => {
     state.showWeekendColor = e.target.checked; rerender();

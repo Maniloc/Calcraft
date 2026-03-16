@@ -198,6 +198,13 @@
         </div>
 
         <div class="field-group">
+          <label class="field-label">Колонтитул</label>
+          <input type="text" id="calFooter" class="field-input"
+            placeholder="© Компания 2025 · @Maniloc" maxlength="100" />
+          <p class="tip">Текст в нижней части листа</p>
+        </div>
+
+        <div class="field-group">
           <label class="field-label">Размер экспорта</label>
           <div class="size-grid">
             <button class="size-btn" data-size="a2">A2</button>
@@ -351,6 +358,11 @@
 
         <!-- 12 months grid -->
         <div class="months-grid" id="monthsGrid"></div>
+
+        <!-- Колонтитул -->
+        <div class="sheet-footer-bar" id="sheetFooterBar" style="display:none">
+          <span class="sheet-footer-text" id="sheetFooterText"></span>
+        </div>
 
         <!-- Legend -->
         <div class="sheet-footer" id="sheetFooter">

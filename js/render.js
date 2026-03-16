@@ -196,6 +196,15 @@ export function renderHeader() {
   setText('sheetYear',     state.year);
   setText('sheetTitle',    state.title);
   setText('sheetSubtitle', state.subtitle);
+  // Колонтитул
+  const footerEl = document.getElementById('sheetFooterText');
+  if (footerEl) footerEl.textContent = state.footer || '';
+  const footerWrap = document.getElementById('sheetFooterBar');
+  if (footerWrap) footerWrap.style.display = state.footer ? '' : 'none';
+}
+
+export function renderHeaderOnly() {
+  renderHeader();
 }
 
 // ── MONTHS GRID ─────────────────────────
